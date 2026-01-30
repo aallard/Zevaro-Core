@@ -9,6 +9,7 @@ import ai.zevaro.core.domain.outcome.Outcome;
 import ai.zevaro.core.domain.outcome.OutcomeRepository;
 import ai.zevaro.core.domain.user.User;
 import ai.zevaro.core.domain.user.UserRepository;
+import ai.zevaro.core.event.EventPublisher;
 import ai.zevaro.core.exception.ResourceNotFoundException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,6 +34,7 @@ public class HypothesisService {
     private final UserRepository userRepository;
     private final HypothesisMapper hypothesisMapper;
     private final ObjectMapper objectMapper;
+    private final EventPublisher eventPublisher;
 
     private static final Set<HypothesisStatus> TERMINAL_STATUSES = Set.of(
             HypothesisStatus.VALIDATED,
@@ -121,6 +123,9 @@ public class HypothesisService {
         }
 
         hypothesis = hypothesisRepository.save(hypothesis);
+
+        eventPublisher.publishHypothesisCreated(hypothesis, createdById);
+
         return hypothesisMapper.toResponse(hypothesis);
     }
 
@@ -168,6 +173,9 @@ public class HypothesisService {
         }
 
         hypothesis = hypothesisRepository.save(hypothesis);
+
+        eventPublisher.publishHypothesisStatusChanged(hypothesis, currentStatus, null, request.blockedByDecisionId());
+
         return hypothesisMapper.toResponse(hypothesis);
     }
 
@@ -199,6 +207,9 @@ public class HypothesisService {
         }
 
         hypothesis = hypothesisRepository.save(hypothesis);
+
+        eventPublisher.publishHypothesisConcluded(hypothesis, concludedById, request.experimentResults());
+
         return hypothesisMapper.toResponse(hypothesis);
     }
 

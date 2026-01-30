@@ -23,6 +23,7 @@ import ai.zevaro.core.domain.team.Team;
 import ai.zevaro.core.domain.team.TeamRepository;
 import ai.zevaro.core.domain.user.User;
 import ai.zevaro.core.domain.user.UserRepository;
+import ai.zevaro.core.event.EventPublisher;
 import ai.zevaro.core.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -49,6 +50,7 @@ public class DecisionService {
     private final StakeholderRepository stakeholderRepository;
     private final StakeholderService stakeholderService;
     private final DecisionMapper decisionMapper;
+    private final EventPublisher eventPublisher;
 
     private static final Set<DecisionStatus> OPEN_STATUSES = Set.of(
             DecisionStatus.NEEDS_INPUT,
@@ -189,6 +191,8 @@ public class DecisionService {
                     .ifPresent(stakeholder -> stakeholderService.onDecisionAssigned(stakeholder.getId()));
         }
 
+        eventPublisher.publishDecisionCreated(decision, createdById);
+
         return toResponseWithCount(decision);
     }
 
@@ -281,7 +285,7 @@ public class DecisionService {
 
         Decision savedDecision = decisionRepository.save(decision);
 
-        unblockHypotheses(savedDecision, tenantId);
+        List<UUID> unblockedHypothesisIds = unblockHypotheses(savedDecision, tenantId);
 
         if (savedDecision.getAssignedTo() != null) {
             Instant createdAt = savedDecision.getCreatedAt();
@@ -292,6 +296,8 @@ public class DecisionService {
                         stakeholderService.onDecisionCompleted(stakeholder.getId(), Instant.now(), responseTimeHours);
                     });
         }
+
+        eventPublisher.publishDecisionResolved(savedDecision, decidedById, unblockedHypothesisIds);
 
         return toResponseWithCount(savedDecision);
     }
@@ -381,6 +387,13 @@ public class DecisionService {
             stakeholderRepository.findByUserIdAndTenantId(previousAssignee.getId(), tenantId)
                     .ifPresent(stakeholder -> stakeholderService.onDecisionEscalated(stakeholder.getId()));
         }
+
+        eventPublisher.publishDecisionEscalated(
+                decision,
+                escalatedById,
+                previousAssignee != null ? previousAssignee.getId() : null,
+                request.reason()
+        );
 
         return toResponseWithCount(decision);
     }
@@ -520,10 +533,11 @@ public class DecisionService {
         return decisionMapper.toResponse(decision, commentCount);
     }
 
-    private void unblockHypotheses(Decision decision, UUID tenantId) {
+    private List<UUID> unblockHypotheses(Decision decision, UUID tenantId) {
+        List<UUID> unblockedIds = new java.util.ArrayList<>();
         DecisionResponse response = decisionMapper.toResponse(decision, 0);
         if (response.blockedItems() == null) {
-            return;
+            return unblockedIds;
         }
 
         for (BlockedItem item : response.blockedItems()) {
@@ -534,9 +548,11 @@ public class DecisionService {
                                 hypothesis.setStatus(HypothesisStatus.READY);
                                 hypothesis.setBlockedReason(null);
                                 hypothesisRepository.save(hypothesis);
+                                unblockedIds.add(hypothesis.getId());
                             }
                         });
             }
         }
+        return unblockedIds;
     }
 }

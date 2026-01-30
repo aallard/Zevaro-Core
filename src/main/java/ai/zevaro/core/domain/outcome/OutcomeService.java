@@ -10,6 +10,7 @@ import ai.zevaro.core.domain.team.Team;
 import ai.zevaro.core.domain.team.TeamRepository;
 import ai.zevaro.core.domain.user.User;
 import ai.zevaro.core.domain.user.UserRepository;
+import ai.zevaro.core.event.EventPublisher;
 import ai.zevaro.core.exception.ResourceNotFoundException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,6 +36,7 @@ public class OutcomeService {
     private final UserRepository userRepository;
     private final OutcomeMapper outcomeMapper;
     private final ObjectMapper objectMapper;
+    private final EventPublisher eventPublisher;
 
     private static final Set<OutcomeStatus> TERMINAL_STATUSES = Set.of(
             OutcomeStatus.VALIDATED,
@@ -99,6 +101,9 @@ public class OutcomeService {
         }
 
         outcome = outcomeRepository.save(outcome);
+
+        eventPublisher.publishOutcomeCreated(outcome, createdById);
+
         return toResponseWithCount(outcome);
     }
 
@@ -173,6 +178,9 @@ public class OutcomeService {
         }
 
         outcome = outcomeRepository.save(outcome);
+
+        eventPublisher.publishOutcomeValidated(outcome, validatedById, request.finalMetrics());
+
         return toResponseWithCount(outcome);
     }
 
@@ -202,6 +210,9 @@ public class OutcomeService {
         }
 
         outcome = outcomeRepository.save(outcome);
+
+        eventPublisher.publishOutcomeInvalidated(outcome, invalidatedById);
+
         return toResponseWithCount(outcome);
     }
 
