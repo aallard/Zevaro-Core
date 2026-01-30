@@ -1,5 +1,6 @@
 package ai.zevaro.core.security;
 
+import ai.zevaro.core.domain.rbac.Permission;
 import ai.zevaro.core.domain.user.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Component
@@ -33,11 +35,16 @@ public class JwtTokenProvider {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpiration);
 
+        List<String> permissions = user.getRole().getPermissions().stream()
+                .map(Permission::getCode)
+                .toList();
+
         return Jwts.builder()
                 .subject(user.getId().toString())
                 .claim("tenantId", user.getTenantId().toString())
                 .claim("email", user.getEmail())
-                .claim("role", user.getRole().name())
+                .claim("role", user.getRole().getCode())
+                .claim("permissions", permissions)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())

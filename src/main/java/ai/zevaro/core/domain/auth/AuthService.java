@@ -4,9 +4,10 @@ import ai.zevaro.core.domain.auth.dto.AuthResponse;
 import ai.zevaro.core.domain.auth.dto.LoginRequest;
 import ai.zevaro.core.domain.auth.dto.RefreshTokenRequest;
 import ai.zevaro.core.domain.auth.dto.RegisterRequest;
+import ai.zevaro.core.domain.rbac.Role;
+import ai.zevaro.core.domain.rbac.RoleRepository;
 import ai.zevaro.core.domain.tenant.Tenant;
 import ai.zevaro.core.domain.tenant.TenantRepository;
-import ai.zevaro.core.domain.user.Role;
 import ai.zevaro.core.domain.user.User;
 import ai.zevaro.core.domain.user.UserRepository;
 import ai.zevaro.core.exception.ResourceNotFoundException;
@@ -18,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -26,6 +28,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
+    private final RoleRepository roleRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
 
@@ -34,9 +37,15 @@ public class AuthService {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new BadCredentialsException("Invalid email or password");
         }
+
+        if (!user.isActive()) {
+            throw new BadCredentialsException("Account is deactivated");
+        }
+
+        userRepository.updateLastLogin(user.getId(), Instant.now());
 
         return buildAuthResponse(user);
     }
@@ -47,16 +56,26 @@ public class AuthService {
             throw new IllegalArgumentException("Email already registered");
         }
 
+        String slug = generateSlug(request.tenantName());
+        if (tenantRepository.existsBySlug(slug)) {
+            throw new IllegalArgumentException("Organization name already taken");
+        }
+
         Tenant tenant = new Tenant();
         tenant.setName(request.tenantName());
+        tenant.setSlug(slug);
         tenant = tenantRepository.save(tenant);
+
+        Role superAdminRole = roleRepository.findByCodeAndTenantIdIsNull("SUPER_ADMIN")
+                .orElseThrow(() -> new IllegalStateException("SUPER_ADMIN role not found. Run data loaders first."));
 
         User user = new User();
         user.setTenantId(tenant.getId());
         user.setEmail(request.email());
-        user.setPassword(passwordEncoder.encode(request.password()));
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setName(request.name());
-        user.setRole(Role.OWNER);
+        user.setRole(superAdminRole);
+        user.setActive(true);
 
         String refreshToken = jwtTokenProvider.generateRefreshToken(user);
         user.setRefreshToken(refreshToken);
@@ -118,8 +137,14 @@ public class AuthService {
                         user.getId().toString(),
                         user.getEmail(),
                         user.getName(),
-                        user.getRole().name()
+                        user.getRole().getCode()
                 )
         );
+    }
+
+    private String generateSlug(String name) {
+        return name.toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("^-|-$", "");
     }
 }
