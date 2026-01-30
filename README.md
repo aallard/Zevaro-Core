@@ -4,7 +4,7 @@
 
 [![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.org/projects/jdk/21/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![License](https://img.shields.io/badge/License-Proprietary-blue.svg)]()
+[![License](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 
 Zevaro-Core is the central backend service powering **Zevaro** — an AI-first, multi-tenant SaaS platform that replaces traditional Agile tooling with decision-velocity-optimized product management designed for 50-500x development velocity environments.
 
@@ -369,7 +369,17 @@ Base URL: `http://localhost:8080/api/v1`
 
 ## 📄 License
 
-Proprietary — All rights reserved.
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)** — see the [LICENSE](LICENSE) file for details.
+
+### What This Means
+
+✅ **You can**: Use, modify, distribute, and self-host freely  
+✅ **You must**: Open-source any modifications if you host this as a service  
+✅ **You must**: Include license and copyright notices  
+
+### Commercial Licensing
+
+If you want to use Zevaro in a proprietary product or offer it as a hosted service without open-sourcing your modifications, commercial licenses are available. Contact: [licensing@zevaro.ai](mailto:licensing@zevaro.ai)
 
 ---
 
