@@ -16,6 +16,9 @@ import ai.zevaro.core.domain.hypothesis.HypothesisRepository;
 import ai.zevaro.core.domain.hypothesis.HypothesisStatus;
 import ai.zevaro.core.domain.outcome.Outcome;
 import ai.zevaro.core.domain.outcome.OutcomeRepository;
+import ai.zevaro.core.domain.stakeholder.Stakeholder;
+import ai.zevaro.core.domain.stakeholder.StakeholderRepository;
+import ai.zevaro.core.domain.stakeholder.StakeholderService;
 import ai.zevaro.core.domain.team.Team;
 import ai.zevaro.core.domain.team.TeamRepository;
 import ai.zevaro.core.domain.user.User;
@@ -43,6 +46,8 @@ public class DecisionService {
     private final TeamRepository teamRepository;
     private final OutcomeRepository outcomeRepository;
     private final HypothesisRepository hypothesisRepository;
+    private final StakeholderRepository stakeholderRepository;
+    private final StakeholderService stakeholderService;
     private final DecisionMapper decisionMapper;
 
     private static final Set<DecisionStatus> OPEN_STATUSES = Set.of(
@@ -178,6 +183,12 @@ public class DecisionService {
         }
 
         decision = decisionRepository.save(decision);
+
+        if (decision.getAssignedTo() != null) {
+            stakeholderRepository.findByUserIdAndTenantId(decision.getAssignedTo().getId(), tenantId)
+                    .ifPresent(stakeholder -> stakeholderService.onDecisionAssigned(stakeholder.getId()));
+        }
+
         return toResponseWithCount(decision);
     }
 
@@ -268,11 +279,21 @@ public class DecisionService {
             decision.setSelectedOption(decisionMapper.selectedOptionToJson(request.selectedOption()));
         }
 
-        decision = decisionRepository.save(decision);
+        Decision savedDecision = decisionRepository.save(decision);
 
-        unblockHypotheses(decision, tenantId);
+        unblockHypotheses(savedDecision, tenantId);
 
-        return toResponseWithCount(decision);
+        if (savedDecision.getAssignedTo() != null) {
+            Instant createdAt = savedDecision.getCreatedAt();
+            UUID assignedToUserId = savedDecision.getAssignedTo().getId();
+            stakeholderRepository.findByUserIdAndTenantId(assignedToUserId, tenantId)
+                    .ifPresent(stakeholder -> {
+                        double responseTimeHours = Duration.between(createdAt, Instant.now()).toHours();
+                        stakeholderService.onDecisionCompleted(stakeholder.getId(), Instant.now(), responseTimeHours);
+                    });
+        }
+
+        return toResponseWithCount(savedDecision);
     }
 
     @Transactional
@@ -347,12 +368,20 @@ public class DecisionService {
         User escalatedTo = userRepository.findByIdAndTenantId(request.escalateToId(), tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.escalateToId()));
 
+        User previousAssignee = decision.getAssignedTo();
+
         decision.setEscalationLevel(decision.getEscalationLevel() + 1);
         decision.setEscalatedAt(Instant.now());
         decision.setEscalatedTo(escalatedTo);
         decision.setAssignedTo(escalatedTo);
 
         decision = decisionRepository.save(decision);
+
+        if (previousAssignee != null) {
+            stakeholderRepository.findByUserIdAndTenantId(previousAssignee.getId(), tenantId)
+                    .ifPresent(stakeholder -> stakeholderService.onDecisionEscalated(stakeholder.getId()));
+        }
+
         return toResponseWithCount(decision);
     }
 
