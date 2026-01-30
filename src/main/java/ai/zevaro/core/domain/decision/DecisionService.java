@@ -1,0 +1,513 @@
+package ai.zevaro.core.domain.decision;
+
+import ai.zevaro.core.config.AppConstants;
+import ai.zevaro.core.domain.decision.dto.BlockedItem;
+import ai.zevaro.core.domain.decision.dto.CommentResponse;
+import ai.zevaro.core.domain.decision.dto.CreateCommentRequest;
+import ai.zevaro.core.domain.decision.dto.CreateDecisionRequest;
+import ai.zevaro.core.domain.decision.dto.DecisionQueueResponse;
+import ai.zevaro.core.domain.decision.dto.DecisionResponse;
+import ai.zevaro.core.domain.decision.dto.EscalateDecisionRequest;
+import ai.zevaro.core.domain.decision.dto.ResolveDecisionRequest;
+import ai.zevaro.core.domain.decision.dto.UpdateCommentRequest;
+import ai.zevaro.core.domain.decision.dto.UpdateDecisionRequest;
+import ai.zevaro.core.domain.hypothesis.Hypothesis;
+import ai.zevaro.core.domain.hypothesis.HypothesisRepository;
+import ai.zevaro.core.domain.hypothesis.HypothesisStatus;
+import ai.zevaro.core.domain.outcome.Outcome;
+import ai.zevaro.core.domain.outcome.OutcomeRepository;
+import ai.zevaro.core.domain.team.Team;
+import ai.zevaro.core.domain.team.TeamRepository;
+import ai.zevaro.core.domain.user.User;
+import ai.zevaro.core.domain.user.UserRepository;
+import ai.zevaro.core.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class DecisionService {
+
+    private final DecisionRepository decisionRepository;
+    private final DecisionCommentRepository commentRepository;
+    private final UserRepository userRepository;
+    private final TeamRepository teamRepository;
+    private final OutcomeRepository outcomeRepository;
+    private final HypothesisRepository hypothesisRepository;
+    private final DecisionMapper decisionMapper;
+
+    private static final Set<DecisionStatus> OPEN_STATUSES = Set.of(
+            DecisionStatus.NEEDS_INPUT,
+            DecisionStatus.UNDER_DISCUSSION
+    );
+
+    private static final Set<DecisionStatus> TERMINAL_STATUSES = Set.of(
+            DecisionStatus.IMPLEMENTED,
+            DecisionStatus.CANCELLED
+    );
+
+    @Transactional(readOnly = true)
+    public List<DecisionResponse> getDecisions(UUID tenantId, DecisionStatus status, DecisionPriority priority,
+                                                DecisionType type, UUID teamId) {
+        List<Decision> decisions;
+
+        if (status != null) {
+            decisions = decisionRepository.findByTenantIdAndStatus(tenantId, status);
+        } else if (priority != null) {
+            decisions = decisionRepository.findByTenantIdAndPriority(tenantId, priority);
+        } else if (type != null) {
+            decisions = decisionRepository.findByTenantIdAndDecisionType(tenantId, type);
+        } else if (teamId != null) {
+            decisions = decisionRepository.findByTeamId(teamId);
+        } else {
+            decisions = decisionRepository.findByTenantId(tenantId);
+        }
+
+        return decisions.stream()
+                .map(this::toResponseWithCount)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public DecisionResponse getDecisionById(UUID id, UUID tenantId) {
+        Decision decision = decisionRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", id));
+        return toResponseWithCount(decision);
+    }
+
+    @Transactional(readOnly = true)
+    public DecisionQueueResponse getDecisionQueue(UUID tenantId) {
+        List<DecisionStatus> openStatuses = List.of(DecisionStatus.NEEDS_INPUT, DecisionStatus.UNDER_DISCUSSION);
+        List<Decision> queueDecisions = decisionRepository.findDecisionQueue(tenantId, openStatuses);
+
+        List<DecisionResponse> needsInput = queueDecisions.stream()
+                .filter(d -> d.getStatus() == DecisionStatus.NEEDS_INPUT)
+                .map(this::toResponseWithCount)
+                .toList();
+
+        List<DecisionResponse> underDiscussion = queueDecisions.stream()
+                .filter(d -> d.getStatus() == DecisionStatus.UNDER_DISCUSSION)
+                .map(this::toResponseWithCount)
+                .toList();
+
+        List<Decision> recentlyDecided = decisionRepository.findByTenantIdAndStatus(tenantId, DecisionStatus.DECIDED);
+        List<DecisionResponse> decided = recentlyDecided.stream()
+                .map(this::toResponseWithCount)
+                .toList();
+
+        long totalPending = decisionRepository.countPendingDecisions(tenantId);
+        Instant thirtyDaysAgo = Instant.now().minus(Duration.ofDays(30));
+        Double avgTime = decisionRepository.getAverageDecisionTimeHours(tenantId, thirtyDaysAgo);
+
+        return new DecisionQueueResponse(needsInput, underDiscussion, decided, totalPending, avgTime);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DecisionResponse> getMyPendingDecisions(UUID userId) {
+        return decisionRepository.findMyPendingDecisions(userId).stream()
+                .map(this::toResponseWithCount)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<DecisionResponse> getOverdueDecisions(UUID tenantId) {
+        return decisionRepository.findOverdueDecisions(tenantId, Instant.now()).stream()
+                .map(this::toResponseWithCount)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<DecisionResponse> getDecisionsForOutcome(UUID outcomeId, UUID tenantId) {
+        return decisionRepository.findByOutcomeId(outcomeId).stream()
+                .map(this::toResponseWithCount)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<DecisionResponse> getDecisionsForHypothesis(UUID hypothesisId, UUID tenantId) {
+        return decisionRepository.findByHypothesisId(hypothesisId).stream()
+                .map(this::toResponseWithCount)
+                .toList();
+    }
+
+    @Transactional
+    public DecisionResponse createDecision(UUID tenantId, CreateDecisionRequest request, UUID createdById) {
+        Decision decision = decisionMapper.toEntity(request, tenantId, createdById);
+
+        int slaHours = request.slaHours() != null ? request.slaHours() : getSlaHours(request.priority());
+        decision.setSlaHours(slaHours);
+        decision.setDueAt(Instant.now().plus(Duration.ofHours(slaHours)));
+
+        if (request.ownerId() != null) {
+            User owner = userRepository.findByIdAndTenantId(request.ownerId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.ownerId()));
+            decision.setOwner(owner);
+        }
+
+        if (request.assignedToId() != null) {
+            User assignedTo = userRepository.findByIdAndTenantId(request.assignedToId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.assignedToId()));
+            decision.setAssignedTo(assignedTo);
+        }
+
+        if (request.outcomeId() != null) {
+            Outcome outcome = outcomeRepository.findByIdAndTenantId(request.outcomeId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Outcome", "id", request.outcomeId()));
+            decision.setOutcome(outcome);
+        }
+
+        if (request.hypothesisId() != null) {
+            Hypothesis hypothesis = hypothesisRepository.findByIdAndTenantId(request.hypothesisId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Hypothesis", "id", request.hypothesisId()));
+            decision.setHypothesis(hypothesis);
+        }
+
+        if (request.teamId() != null) {
+            Team team = teamRepository.findByIdAndTenantId(request.teamId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Team", "id", request.teamId()));
+            decision.setTeam(team);
+        }
+
+        decision = decisionRepository.save(decision);
+        return toResponseWithCount(decision);
+    }
+
+    @Transactional
+    public DecisionResponse updateDecision(UUID id, UUID tenantId, UpdateDecisionRequest request) {
+        Decision decision = decisionRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", id));
+
+        decisionMapper.updateEntity(decision, request);
+
+        if (request.ownerId() != null) {
+            User owner = userRepository.findByIdAndTenantId(request.ownerId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.ownerId()));
+            decision.setOwner(owner);
+        }
+
+        if (request.assignedToId() != null) {
+            User assignedTo = userRepository.findByIdAndTenantId(request.assignedToId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.assignedToId()));
+            decision.setAssignedTo(assignedTo);
+        }
+
+        if (request.outcomeId() != null) {
+            Outcome outcome = outcomeRepository.findByIdAndTenantId(request.outcomeId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Outcome", "id", request.outcomeId()));
+            decision.setOutcome(outcome);
+        }
+
+        if (request.hypothesisId() != null) {
+            Hypothesis hypothesis = hypothesisRepository.findByIdAndTenantId(request.hypothesisId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Hypothesis", "id", request.hypothesisId()));
+            decision.setHypothesis(hypothesis);
+        }
+
+        if (request.teamId() != null) {
+            Team team = teamRepository.findByIdAndTenantId(request.teamId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Team", "id", request.teamId()));
+            decision.setTeam(team);
+        }
+
+        if (request.slaHours() != null) {
+            decision.setDueAt(decision.getCreatedAt().plus(Duration.ofHours(request.slaHours())));
+        }
+
+        decision = decisionRepository.save(decision);
+        return toResponseWithCount(decision);
+    }
+
+    @Transactional
+    public void deleteDecision(UUID id, UUID tenantId) {
+        Decision decision = decisionRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", id));
+        decisionRepository.delete(decision);
+    }
+
+    @Transactional
+    public DecisionResponse startDiscussion(UUID id, UUID tenantId) {
+        Decision decision = decisionRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", id));
+
+        if (decision.getStatus() != DecisionStatus.NEEDS_INPUT) {
+            throw new IllegalStateException("Can only start discussion from NEEDS_INPUT status");
+        }
+
+        decision.setStatus(DecisionStatus.UNDER_DISCUSSION);
+        decision = decisionRepository.save(decision);
+        return toResponseWithCount(decision);
+    }
+
+    @Transactional
+    public DecisionResponse resolve(UUID id, UUID tenantId, ResolveDecisionRequest request, UUID decidedById) {
+        Decision decision = decisionRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", id));
+
+        if (!OPEN_STATUSES.contains(decision.getStatus())) {
+            throw new IllegalStateException("Can only resolve decisions in open status");
+        }
+
+        User decidedBy = userRepository.findByIdAndTenantId(decidedById, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", decidedById));
+
+        decision.setStatus(DecisionStatus.DECIDED);
+        decision.setDecidedAt(Instant.now());
+        decision.setDecidedBy(decidedBy);
+        decision.setDecisionRationale(request.rationale());
+
+        if (request.selectedOption() != null) {
+            decision.setSelectedOption(decisionMapper.selectedOptionToJson(request.selectedOption()));
+        }
+
+        decision = decisionRepository.save(decision);
+
+        unblockHypotheses(decision, tenantId);
+
+        return toResponseWithCount(decision);
+    }
+
+    @Transactional
+    public DecisionResponse implement(UUID id, UUID tenantId) {
+        Decision decision = decisionRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", id));
+
+        if (decision.getStatus() != DecisionStatus.DECIDED) {
+            throw new IllegalStateException("Can only implement decisions in DECIDED status");
+        }
+
+        decision.setStatus(DecisionStatus.IMPLEMENTED);
+        decision = decisionRepository.save(decision);
+        return toResponseWithCount(decision);
+    }
+
+    @Transactional
+    public DecisionResponse defer(UUID id, UUID tenantId, String reason) {
+        Decision decision = decisionRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", id));
+
+        if (!OPEN_STATUSES.contains(decision.getStatus())) {
+            throw new IllegalStateException("Can only defer decisions in open status");
+        }
+
+        decision.setStatus(DecisionStatus.DEFERRED);
+        decision.setDecisionRationale(reason);
+        decision = decisionRepository.save(decision);
+        return toResponseWithCount(decision);
+    }
+
+    @Transactional
+    public DecisionResponse cancel(UUID id, UUID tenantId, String reason) {
+        Decision decision = decisionRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", id));
+
+        if (TERMINAL_STATUSES.contains(decision.getStatus())) {
+            throw new IllegalStateException("Cannot cancel a decision in terminal status");
+        }
+
+        decision.setStatus(DecisionStatus.CANCELLED);
+        decision.setDecisionRationale(reason);
+        decision = decisionRepository.save(decision);
+        return toResponseWithCount(decision);
+    }
+
+    @Transactional
+    public DecisionResponse reopen(UUID id, UUID tenantId) {
+        Decision decision = decisionRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", id));
+
+        if (decision.getStatus() != DecisionStatus.DEFERRED && decision.getStatus() != DecisionStatus.CANCELLED) {
+            throw new IllegalStateException("Can only reopen DEFERRED or CANCELLED decisions");
+        }
+
+        decision.setStatus(DecisionStatus.NEEDS_INPUT);
+        decision.setDecisionRationale(null);
+        decision.setDueAt(Instant.now().plus(Duration.ofHours(decision.getSlaHours())));
+        decision = decisionRepository.save(decision);
+        return toResponseWithCount(decision);
+    }
+
+    @Transactional
+    public DecisionResponse escalate(UUID id, UUID tenantId, EscalateDecisionRequest request, UUID escalatedById) {
+        Decision decision = decisionRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", id));
+
+        if (!OPEN_STATUSES.contains(decision.getStatus())) {
+            throw new IllegalStateException("Can only escalate decisions in open status");
+        }
+
+        User escalatedTo = userRepository.findByIdAndTenantId(request.escalateToId(), tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.escalateToId()));
+
+        decision.setEscalationLevel(decision.getEscalationLevel() + 1);
+        decision.setEscalatedAt(Instant.now());
+        decision.setEscalatedTo(escalatedTo);
+        decision.setAssignedTo(escalatedTo);
+
+        decision = decisionRepository.save(decision);
+        return toResponseWithCount(decision);
+    }
+
+    @Transactional
+    public DecisionResponse assign(UUID id, UUID tenantId, UUID assignedToId) {
+        Decision decision = decisionRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", id));
+
+        User assignedTo = userRepository.findByIdAndTenantId(assignedToId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", assignedToId));
+
+        decision.setAssignedTo(assignedTo);
+        decision = decisionRepository.save(decision);
+        return toResponseWithCount(decision);
+    }
+
+    @Transactional
+    public DecisionResponse reassign(UUID id, UUID tenantId, UUID newAssigneeId, String reason) {
+        return assign(id, tenantId, newAssigneeId);
+    }
+
+    @Transactional
+    public DecisionResponse addBlockedItem(UUID id, UUID tenantId, BlockedItem item) {
+        Decision decision = decisionRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", id));
+
+        List<BlockedItem> items = decisionMapper.toResponse(decision, 0).blockedItems();
+        if (items == null) {
+            items = new java.util.ArrayList<>();
+        } else {
+            items = new java.util.ArrayList<>(items);
+        }
+        items.add(item);
+
+        decision.setBlockedItems(decisionMapper.optionsToJson(null));
+        decision = decisionRepository.save(decision);
+        return toResponseWithCount(decision);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CommentResponse> getComments(UUID decisionId, UUID tenantId) {
+        decisionRepository.findByIdAndTenantId(decisionId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", decisionId));
+
+        return commentRepository.findByDecisionIdOrderByCreatedAtAsc(decisionId).stream()
+                .map(decisionMapper::toCommentResponse)
+                .toList();
+    }
+
+    @Transactional
+    public CommentResponse addComment(UUID decisionId, UUID tenantId, CreateCommentRequest request, UUID authorId) {
+        Decision decision = decisionRepository.findByIdAndTenantId(decisionId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", decisionId));
+
+        User author = userRepository.findByIdAndTenantId(authorId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", authorId));
+
+        DecisionComment comment = new DecisionComment();
+        comment.setDecision(decision);
+        comment.setAuthor(author);
+        comment.setContent(request.content());
+        comment.setOptionId(request.optionId());
+
+        if (request.parentId() != null) {
+            DecisionComment parent = commentRepository.findById(request.parentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Comment", "id", request.parentId()));
+            comment.setParent(parent);
+        }
+
+        comment = commentRepository.save(comment);
+        return decisionMapper.toCommentResponse(comment);
+    }
+
+    @Transactional
+    public CommentResponse updateComment(UUID commentId, UUID tenantId, UpdateCommentRequest request, UUID userId) {
+        DecisionComment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Comment", "id", commentId));
+
+        if (!comment.getAuthor().getId().equals(userId)) {
+            throw new IllegalStateException("Only the author can edit their comment");
+        }
+
+        comment.setContent(request.content());
+        comment.setEdited(true);
+        comment = commentRepository.save(comment);
+        return decisionMapper.toCommentResponse(comment);
+    }
+
+    @Transactional
+    public void deleteComment(UUID commentId, UUID tenantId, UUID userId) {
+        DecisionComment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Comment", "id", commentId));
+
+        if (!comment.getAuthor().getId().equals(userId)) {
+            throw new IllegalStateException("Only the author can delete their comment");
+        }
+
+        commentRepository.delete(comment);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<DecisionStatus, Long> getStatusCounts(UUID tenantId) {
+        List<Object[]> results = decisionRepository.countByStatusForTenant(tenantId);
+        Map<DecisionStatus, Long> counts = new EnumMap<>(DecisionStatus.class);
+
+        for (DecisionStatus status : DecisionStatus.values()) {
+            counts.put(status, 0L);
+        }
+
+        for (Object[] result : results) {
+            DecisionStatus status = (DecisionStatus) result[0];
+            Long count = (Long) result[1];
+            counts.put(status, count);
+        }
+
+        return counts;
+    }
+
+    @Transactional(readOnly = true)
+    public Double getAverageDecisionTime(UUID tenantId, int days) {
+        Instant since = Instant.now().minus(Duration.ofDays(days));
+        return decisionRepository.getAverageDecisionTimeHours(tenantId, since);
+    }
+
+    private int getSlaHours(DecisionPriority priority) {
+        return switch (priority) {
+            case BLOCKING -> AppConstants.SLA_BLOCKING;
+            case HIGH -> AppConstants.SLA_HIGH;
+            case NORMAL -> AppConstants.SLA_NORMAL;
+            case LOW -> AppConstants.SLA_LOW;
+        };
+    }
+
+    private DecisionResponse toResponseWithCount(Decision decision) {
+        int commentCount = commentRepository.countByDecisionId(decision.getId());
+        return decisionMapper.toResponse(decision, commentCount);
+    }
+
+    private void unblockHypotheses(Decision decision, UUID tenantId) {
+        DecisionResponse response = decisionMapper.toResponse(decision, 0);
+        if (response.blockedItems() == null) {
+            return;
+        }
+
+        for (BlockedItem item : response.blockedItems()) {
+            if ("hypothesis".equals(item.type())) {
+                hypothesisRepository.findByIdAndTenantId(item.id(), tenantId)
+                        .ifPresent(hypothesis -> {
+                            if (hypothesis.getStatus() == HypothesisStatus.BLOCKED) {
+                                hypothesis.setStatus(HypothesisStatus.READY);
+                                hypothesis.setBlockedReason(null);
+                                hypothesisRepository.save(hypothesis);
+                            }
+                        });
+            }
+        }
+    }
+}
