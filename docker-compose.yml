@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: zevaro-postgres
+    environment:
+      POSTGRES_USER: zevaro
+      POSTGRES_PASSWORD: zevaro
+      POSTGRES_DB: zevaro
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zevaro -d zevaro"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - zevaro-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: zevaro-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - zevaro-network
+
+  # Kafka (using KRaft mode - no Zookeeper)
+  kafka:
+    image: bitnami/kafka:3.6
+    container_name: zevaro-kafka
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+    ports:
+      - "9092:9092"
+      - "9094:9094"
+    volumes:
+      - kafka_data:/bitnami/kafka
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - zevaro-network
+
+  # Kafka UI (optional, for debugging)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: zevaro-kafka-ui
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=zevaro
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+    ports:
+      - "8090:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - zevaro-network
+    profiles:
+      - debug
+
+  # Zevaro Core Service (optional - for full stack testing)
+  zevaro-core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zevaro-core
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_HOST=postgres
+      - DB_USER=zevaro
+      - DB_PASSWORD=zevaro
+      - REDIS_HOST=redis
+      - KAFKA_SERVERS=kafka:9092
+      - JWT_SECRET=zevaro-docker-secret-key-min-256-bits-long-for-security
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - zevaro-network
+    profiles:
+      - full
+
+volumes:
+  postgres_data:
+  redis_data:
+  kafka_data:
+
+networks:
+  zevaro-network:
+    driver: bridge

@@ -1,0 +1,32 @@
+# Build output
+target/
+build/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+
+# Maven wrapper
+.mvn/wrapper/maven-wrapper.jar
+
+# Test output
+test-output/
+surefire-reports/
