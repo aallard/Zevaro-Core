@@ -1,5 +1,6 @@
 package ai.zevaro.core.domain.outcome;
 
+import ai.zevaro.core.domain.hypothesis.HypothesisRepository;
 import ai.zevaro.core.domain.outcome.dto.CreateOutcomeRequest;
 import ai.zevaro.core.domain.outcome.dto.InvalidateOutcomeRequest;
 import ai.zevaro.core.domain.outcome.dto.OutcomeResponse;
@@ -29,6 +30,7 @@ import java.util.UUID;
 public class OutcomeService {
 
     private final OutcomeRepository outcomeRepository;
+    private final HypothesisRepository hypothesisRepository;
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
     private final OutcomeMapper outcomeMapper;
@@ -55,7 +57,7 @@ public class OutcomeService {
         }
 
         return outcomes.stream()
-                .map(o -> outcomeMapper.toResponse(o, 0))
+                .map(this::toResponseWithCount)
                 .toList();
     }
 
@@ -63,20 +65,20 @@ public class OutcomeService {
     public OutcomeResponse getOutcomeById(UUID id, UUID tenantId) {
         Outcome outcome = outcomeRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Outcome", "id", id));
-        return outcomeMapper.toResponse(outcome, 0);
+        return toResponseWithCount(outcome);
     }
 
     @Transactional(readOnly = true)
     public List<OutcomeResponse> getOutcomesForTeam(UUID teamId, UUID tenantId) {
         return outcomeRepository.findByTenantIdAndTeamId(tenantId, teamId).stream()
-                .map(o -> outcomeMapper.toResponse(o, 0))
+                .map(this::toResponseWithCount)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<OutcomeResponse> getOutcomesForOwner(UUID ownerId, UUID tenantId) {
         return outcomeRepository.findByTenantIdAndOwnerId(tenantId, ownerId).stream()
-                .map(o -> outcomeMapper.toResponse(o, 0))
+                .map(this::toResponseWithCount)
                 .toList();
     }
 
@@ -97,7 +99,7 @@ public class OutcomeService {
         }
 
         outcome = outcomeRepository.save(outcome);
-        return outcomeMapper.toResponse(outcome, 0);
+        return toResponseWithCount(outcome);
     }
 
     @Transactional
@@ -120,7 +122,7 @@ public class OutcomeService {
         }
 
         outcome = outcomeRepository.save(outcome);
-        return outcomeMapper.toResponse(outcome, 0);
+        return toResponseWithCount(outcome);
     }
 
     @Transactional
@@ -142,7 +144,7 @@ public class OutcomeService {
         outcome.setStatus(OutcomeStatus.IN_PROGRESS);
         outcome.setStartedAt(Instant.now());
         outcome = outcomeRepository.save(outcome);
-        return outcomeMapper.toResponse(outcome, 0);
+        return toResponseWithCount(outcome);
     }
 
     @Transactional
@@ -171,7 +173,7 @@ public class OutcomeService {
         }
 
         outcome = outcomeRepository.save(outcome);
-        return outcomeMapper.toResponse(outcome, 0);
+        return toResponseWithCount(outcome);
     }
 
     @Transactional
@@ -200,7 +202,7 @@ public class OutcomeService {
         }
 
         outcome = outcomeRepository.save(outcome);
-        return outcomeMapper.toResponse(outcome, 0);
+        return toResponseWithCount(outcome);
     }
 
     @Transactional
@@ -215,7 +217,7 @@ public class OutcomeService {
         outcome.setStatus(OutcomeStatus.ABANDONED);
         outcome.setValidationNotes(reason);
         outcome = outcomeRepository.save(outcome);
-        return outcomeMapper.toResponse(outcome, 0);
+        return toResponseWithCount(outcome);
     }
 
     @Transactional
@@ -230,7 +232,7 @@ public class OutcomeService {
         }
 
         outcome = outcomeRepository.save(outcome);
-        return outcomeMapper.toResponse(outcome, 0);
+        return toResponseWithCount(outcome);
     }
 
     @Transactional(readOnly = true)
@@ -254,7 +256,12 @@ public class OutcomeService {
     @Transactional(readOnly = true)
     public List<OutcomeResponse> getOverdueOutcomes(UUID tenantId) {
         return outcomeRepository.findOverdueOutcomes(tenantId, LocalDate.now()).stream()
-                .map(o -> outcomeMapper.toResponse(o, 0))
+                .map(this::toResponseWithCount)
                 .toList();
+    }
+
+    private OutcomeResponse toResponseWithCount(Outcome outcome) {
+        int hypothesisCount = (int) hypothesisRepository.countByOutcomeId(outcome.getId());
+        return outcomeMapper.toResponse(outcome, hypothesisCount);
     }
 }
