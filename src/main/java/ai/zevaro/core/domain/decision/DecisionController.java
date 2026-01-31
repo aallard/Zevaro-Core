@@ -13,6 +13,10 @@ import ai.zevaro.core.security.CurrentUser;
 import ai.zevaro.core.security.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -47,6 +51,26 @@ public class DecisionController {
             @CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(decisionService.getDecisions(
                 user.getTenantId(), status, priority, type, teamId));
+    }
+
+    @GetMapping("/paged")
+    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
+    public ResponseEntity<Page<DecisionResponse>> getDecisionsPaged(
+            @RequestParam(required = false) DecisionStatus status,
+            @RequestParam(required = false) DecisionPriority priority,
+            @RequestParam(required = false) DecisionType type,
+            @RequestParam(required = false) UUID teamId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @CurrentUser UserPrincipal user) {
+        Sort sort = sortDir.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, Math.min(size, 100), sort);
+        return ResponseEntity.ok(decisionService.getDecisionsPaged(
+                user.getTenantId(), status, priority, type, teamId, pageable));
     }
 
     @GetMapping("/{id}")

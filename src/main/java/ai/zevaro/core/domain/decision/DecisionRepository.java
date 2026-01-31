@@ -1,5 +1,7 @@
 package ai.zevaro.core.domain.decision;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,7 +17,39 @@ public interface DecisionRepository extends JpaRepository<Decision, UUID> {
 
     Optional<Decision> findByIdAndTenantId(UUID id, UUID tenantId);
 
+    // JOIN FETCH queries for avoiding N+1
+    @Query("SELECT d FROM Decision d " +
+           "LEFT JOIN FETCH d.owner " +
+           "LEFT JOIN FETCH d.assignedTo " +
+           "LEFT JOIN FETCH d.team " +
+           "WHERE d.id = :id AND d.tenantId = :tenantId")
+    Optional<Decision> findByIdAndTenantIdWithDetails(@Param("id") UUID id, @Param("tenantId") UUID tenantId);
+
+    @Query("SELECT DISTINCT d FROM Decision d " +
+           "LEFT JOIN FETCH d.owner " +
+           "LEFT JOIN FETCH d.assignedTo " +
+           "LEFT JOIN FETCH d.team " +
+           "WHERE d.tenantId = :tenantId")
+    List<Decision> findByTenantIdWithDetails(@Param("tenantId") UUID tenantId);
+
+    @Query("SELECT DISTINCT d FROM Decision d " +
+           "LEFT JOIN FETCH d.owner " +
+           "LEFT JOIN FETCH d.assignedTo " +
+           "WHERE d.tenantId = :tenantId AND d.status = :status")
+    List<Decision> findByTenantIdAndStatusWithDetails(@Param("tenantId") UUID tenantId, @Param("status") DecisionStatus status);
+
     List<Decision> findByTenantId(UUID tenantId);
+
+    // Paginated queries
+    Page<Decision> findByTenantId(UUID tenantId, Pageable pageable);
+
+    Page<Decision> findByTenantIdAndStatus(UUID tenantId, DecisionStatus status, Pageable pageable);
+
+    Page<Decision> findByTenantIdAndPriority(UUID tenantId, DecisionPriority priority, Pageable pageable);
+
+    Page<Decision> findByTenantIdAndDecisionType(UUID tenantId, DecisionType type, Pageable pageable);
+
+    Page<Decision> findByTeamId(UUID teamId, Pageable pageable);
 
     List<Decision> findByTenantIdAndStatus(UUID tenantId, DecisionStatus status);
 

@@ -9,6 +9,10 @@ import ai.zevaro.core.security.CurrentUser;
 import ai.zevaro.core.security.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -43,6 +47,25 @@ public class OutcomeController {
             @CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(outcomeService.getOutcomes(
                 user.getTenantId(), status, teamId, priority));
+    }
+
+    @GetMapping("/paged")
+    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:read')")
+    public ResponseEntity<Page<OutcomeResponse>> getOutcomesPaged(
+            @RequestParam(required = false) OutcomeStatus status,
+            @RequestParam(required = false) UUID teamId,
+            @RequestParam(required = false) OutcomePriority priority,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @CurrentUser UserPrincipal user) {
+        Sort sort = sortDir.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, Math.min(size, 100), sort);
+        return ResponseEntity.ok(outcomeService.getOutcomesPaged(
+                user.getTenantId(), status, teamId, priority, pageable));
     }
 
     @GetMapping("/{id}")

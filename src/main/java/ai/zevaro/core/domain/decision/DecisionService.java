@@ -26,6 +26,8 @@ import ai.zevaro.core.domain.user.UserRepository;
 import ai.zevaro.core.event.EventPublisher;
 import ai.zevaro.core.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -82,6 +84,26 @@ public class DecisionService {
         return decisions.stream()
                 .map(this::toResponseWithCount)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<DecisionResponse> getDecisionsPaged(UUID tenantId, DecisionStatus status, DecisionPriority priority,
+                                                     DecisionType type, UUID teamId, Pageable pageable) {
+        Page<Decision> decisions;
+
+        if (status != null) {
+            decisions = decisionRepository.findByTenantIdAndStatus(tenantId, status, pageable);
+        } else if (priority != null) {
+            decisions = decisionRepository.findByTenantIdAndPriority(tenantId, priority, pageable);
+        } else if (type != null) {
+            decisions = decisionRepository.findByTenantIdAndDecisionType(tenantId, type, pageable);
+        } else if (teamId != null) {
+            decisions = decisionRepository.findByTeamId(teamId, pageable);
+        } else {
+            decisions = decisionRepository.findByTenantId(tenantId, pageable);
+        }
+
+        return decisions.map(this::toResponseWithCount);
     }
 
     @Transactional(readOnly = true)

@@ -1,5 +1,7 @@
 package ai.zevaro.core.domain.outcome;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,7 +17,25 @@ public interface OutcomeRepository extends JpaRepository<Outcome, UUID> {
 
     Optional<Outcome> findByIdAndTenantId(UUID id, UUID tenantId);
 
+    // JOIN FETCH for avoiding N+1
+    @Query("SELECT o FROM Outcome o " +
+           "LEFT JOIN FETCH o.owner " +
+           "LEFT JOIN FETCH o.team " +
+           "WHERE o.id = :id AND o.tenantId = :tenantId")
+    Optional<Outcome> findByIdAndTenantIdWithDetails(@Param("id") UUID id, @Param("tenantId") UUID tenantId);
+
     List<Outcome> findByTenantId(UUID tenantId);
+
+    // Paginated queries
+    Page<Outcome> findByTenantId(UUID tenantId, Pageable pageable);
+
+    Page<Outcome> findByTenantIdAndStatus(UUID tenantId, OutcomeStatus status, Pageable pageable);
+
+    Page<Outcome> findByTenantIdAndTeamId(UUID tenantId, UUID teamId, Pageable pageable);
+
+    Page<Outcome> findByTenantIdAndOwnerId(UUID tenantId, UUID ownerId, Pageable pageable);
+
+    Page<Outcome> findByTenantIdAndPriority(UUID tenantId, OutcomePriority priority, Pageable pageable);
 
     List<Outcome> findByTenantIdAndStatus(UUID tenantId, OutcomeStatus status);
 

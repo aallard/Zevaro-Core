@@ -15,6 +15,8 @@ import ai.zevaro.core.exception.ResourceNotFoundException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +63,24 @@ public class OutcomeService {
         return outcomes.stream()
                 .map(this::toResponseWithCount)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OutcomeResponse> getOutcomesPaged(UUID tenantId, OutcomeStatus status, UUID teamId,
+                                                   OutcomePriority priority, Pageable pageable) {
+        Page<Outcome> outcomes;
+
+        if (status != null) {
+            outcomes = outcomeRepository.findByTenantIdAndStatus(tenantId, status, pageable);
+        } else if (teamId != null) {
+            outcomes = outcomeRepository.findByTenantIdAndTeamId(tenantId, teamId, pageable);
+        } else if (priority != null) {
+            outcomes = outcomeRepository.findByTenantIdAndPriority(tenantId, priority, pageable);
+        } else {
+            outcomes = outcomeRepository.findByTenantId(tenantId, pageable);
+        }
+
+        return outcomes.map(this::toResponseWithCount);
     }
 
     @Transactional(readOnly = true)

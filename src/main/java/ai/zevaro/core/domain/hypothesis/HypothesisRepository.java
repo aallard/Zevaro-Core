@@ -1,5 +1,7 @@
 package ai.zevaro.core.domain.hypothesis;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,9 +18,23 @@ public interface HypothesisRepository extends JpaRepository<Hypothesis, UUID> {
 
     Optional<Hypothesis> findByIdAndTenantId(UUID id, UUID tenantId);
 
+    // JOIN FETCH for avoiding N+1
+    @Query("SELECT h FROM Hypothesis h " +
+           "LEFT JOIN FETCH h.owner " +
+           "LEFT JOIN FETCH h.outcome " +
+           "WHERE h.id = :id AND h.tenantId = :tenantId")
+    Optional<Hypothesis> findByIdAndTenantIdWithDetails(@Param("id") UUID id, @Param("tenantId") UUID tenantId);
+
     List<Hypothesis> findByTenantIdAndStatus(UUID tenantId, HypothesisStatus status);
 
     List<Hypothesis> findByTenantIdAndPriority(UUID tenantId, HypothesisPriority priority);
+
+    // Paginated queries
+    Page<Hypothesis> findByTenantId(UUID tenantId, Pageable pageable);
+
+    Page<Hypothesis> findByTenantIdAndStatus(UUID tenantId, HypothesisStatus status, Pageable pageable);
+
+    Page<Hypothesis> findByTenantIdAndPriority(UUID tenantId, HypothesisPriority priority, Pageable pageable);
 
     @Query("SELECT h FROM Hypothesis h WHERE h.tenantId = :tenantId AND h.outcome.id = :outcomeId")
     List<Hypothesis> findByTenantIdAndOutcomeId(@Param("tenantId") UUID tenantId, @Param("outcomeId") UUID outcomeId);

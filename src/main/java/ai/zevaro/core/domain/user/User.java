@@ -8,6 +8,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -24,9 +25,16 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@Table(name = "users", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"tenant_id", "email"})
-})
+@Table(name = "users",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"tenant_id", "email"})
+        },
+        indexes = {
+                @Index(name = "idx_user_tenant_id", columnList = "tenant_id"),
+                @Index(name = "idx_user_email", columnList = "email"),
+                @Index(name = "idx_user_tenant_active", columnList = "tenant_id, is_active"),
+                @Index(name = "idx_user_role_id", columnList = "role_id")
+        })
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter

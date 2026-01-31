@@ -10,13 +10,28 @@ import java.util.Map;
 import java.util.UUID;
 
 public record CreateHypothesisRequest(
-        @NotNull UUID outcomeId,
-        @NotBlank @Size(max = 500) String title,
-        @NotBlank String belief,
-        @NotBlank String expectedResult,
+        @NotNull(message = "Outcome ID is required")
+        UUID outcomeId,
+
+        @NotBlank(message = "Title is required")
+        @Size(min = 3, max = 500, message = "Title must be between 3 and 500 characters")
+        String title,
+
+        @NotBlank(message = "Belief statement is required")
+        @Size(min = 10, max = 2000, message = "Belief must be between 10 and 2000 characters")
+        String belief,
+
+        @NotBlank(message = "Expected result is required")
+        @Size(max = 2000, message = "Expected result cannot exceed 2000 characters")
+        String expectedResult,
+
+        @Size(max = 2000, message = "Measurement criteria cannot exceed 2000 characters")
         String measurementCriteria,
+
         HypothesisPriority priority,
         UUID ownerId,
         Map<String, Object> experimentConfig,
+
+        @Size(max = 20, message = "Cannot have more than 20 tags")
         List<String> tags
 ) {}
