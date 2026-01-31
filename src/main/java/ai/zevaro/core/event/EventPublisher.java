@@ -1,5 +1,6 @@
 package ai.zevaro.core.event;
 
+import ai.zevaro.core.config.KafkaTopics;
 import ai.zevaro.core.domain.decision.Decision;
 import ai.zevaro.core.domain.decision.DecisionPriority;
 import ai.zevaro.core.domain.decision.DecisionType;
@@ -34,15 +35,15 @@ public class EventPublisher {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     private static final Map<String, String> TOPIC_MAP = Map.of(
-            "decision.created", "zevaro.decisions.created",
-            "decision.resolved", "zevaro.decisions.resolved",
-            "decision.escalated", "zevaro.decisions.escalated",
-            "outcome.created", "zevaro.outcomes.created",
-            "outcome.validated", "zevaro.outcomes.validated",
-            "outcome.invalidated", "zevaro.outcomes.invalidated",
-            "hypothesis.created", "zevaro.hypotheses.created",
-            "hypothesis.status-changed", "zevaro.hypotheses.status-changed",
-            "hypothesis.concluded", "zevaro.hypotheses.concluded"
+            "decision.created", KafkaTopics.DECISION_CREATED,
+            "decision.resolved", KafkaTopics.DECISION_RESOLVED,
+            "decision.escalated", KafkaTopics.DECISION_ESCALATED,
+            "outcome.created", KafkaTopics.OUTCOME_CREATED,
+            "outcome.validated", KafkaTopics.OUTCOME_VALIDATED,
+            "outcome.invalidated", KafkaTopics.OUTCOME_INVALIDATED,
+            "hypothesis.created", KafkaTopics.HYPOTHESIS_CREATED,
+            "hypothesis.status-changed", "zevaro.core.hypothesis.status-changed",
+            "hypothesis.concluded", KafkaTopics.HYPOTHESIS_CONCLUDED
     );
 
     public void publish(DomainEvent event) {

@@ -5,9 +5,10 @@ spring:
   application:
     name: zevaro-core
   datasource:
-    url: jdbc:postgresql://localhost:5432/zevaro
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/${DB_NAME:zevaro}
     username: ${DB_USER:zevaro}
     password: ${DB_PASSWORD:zevaro}
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
