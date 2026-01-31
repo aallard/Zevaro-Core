@@ -1,11 +1,11 @@
 package ai.zevaro.core.domain.audit;
 
+import ai.zevaro.core.config.KafkaProducerService;
 import ai.zevaro.core.domain.audit.dto.AuditLogFilter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +22,9 @@ import java.util.UUID;
 public class AuditService {
 
     private final AuditLogRepository auditLogRepository;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaProducerService kafkaProducerService;
+
+    private static final String AUDIT_TOPIC = "zevaro.audit.events";
 
     @Async
     public void log(AuditLogBuilder builder) {
@@ -30,11 +32,9 @@ public class AuditService {
             AuditLog auditLog = builder.build();
             auditLogRepository.save(auditLog);
 
-            try {
-                kafkaTemplate.send("zevaro.audit.events", auditLog.getTenantId().toString(), auditLog);
-            } catch (Exception e) {
-                log.warn("Failed to publish audit event to Kafka: {}", e.getMessage());
-            }
+            // Publish to Kafka using the circuit breaker protected service
+            kafkaProducerService.send(AUDIT_TOPIC, auditLog.getTenantId().toString(), auditLog);
+
         } catch (Exception e) {
             log.error("Failed to save audit log: {}", e.getMessage(), e);
         }

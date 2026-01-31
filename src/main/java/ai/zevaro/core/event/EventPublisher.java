@@ -1,5 +1,6 @@
 package ai.zevaro.core.event;
 
+import ai.zevaro.core.config.KafkaProducerService;
 import ai.zevaro.core.config.KafkaTopics;
 import ai.zevaro.core.domain.decision.Decision;
 import ai.zevaro.core.domain.decision.DecisionPriority;
@@ -19,7 +20,6 @@ import ai.zevaro.core.event.outcome.OutcomeInvalidatedEvent;
 import ai.zevaro.core.event.outcome.OutcomeValidatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -27,12 +27,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Event publisher service using KafkaProducerService with circuit breaker protection.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class EventPublisher {
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaProducerService kafkaProducerService;
 
     private static final Map<String, String> TOPIC_MAP = Map.of(
             "decision.created", KafkaTopics.DECISION_CREATED,
@@ -50,20 +53,8 @@ public class EventPublisher {
         String topic = TOPIC_MAP.getOrDefault(event.getEventType(), "zevaro.events.unknown");
         String key = event.getTenantId().toString();
 
-        try {
-            kafkaTemplate.send(topic, key, event)
-                    .whenComplete((result, ex) -> {
-                        if (ex != null) {
-                            log.error("Failed to publish event {} to {}: {}",
-                                    event.getEventType(), topic, ex.getMessage());
-                        } else {
-                            log.debug("Published event {} to {} partition {}",
-                                    event.getEventType(), topic, result.getRecordMetadata().partition());
-                        }
-                    });
-        } catch (Exception e) {
-            log.error("Error publishing event: {}", e.getMessage(), e);
-        }
+        log.debug("Publishing event {} to topic {}", event.getEventType(), topic);
+        kafkaProducerService.send(topic, key, event);
     }
 
     public void publishDecisionCreated(Decision decision, UUID actorId) {
