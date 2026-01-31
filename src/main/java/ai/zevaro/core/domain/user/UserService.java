@@ -53,8 +53,11 @@ public class UserService {
         User user = userRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
 
-        if (request.name() != null) {
-            user.setName(request.name());
+        if (request.firstName() != null) {
+            user.setFirstName(request.firstName());
+        }
+        if (request.lastName() != null) {
+            user.setLastName(request.lastName());
         }
         if (request.title() != null) {
             user.setTitle(request.title());

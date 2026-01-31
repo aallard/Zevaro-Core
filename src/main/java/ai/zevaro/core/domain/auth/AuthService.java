@@ -77,7 +77,8 @@ public class AuthService {
         user.setTenantId(tenant.getId());
         user.setEmail(request.email());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
-        user.setName(request.name());
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
         user.setRole(superAdminRole);
         user.setActive(true);
 
@@ -134,7 +135,7 @@ public class AuthService {
                 new AuthResponse.UserInfo(
                         user.getId().toString(),
                         user.getEmail(),
-                        user.getName(),
+                        user.getFullName(),
                         user.getRole().getCode()
                 )
         );

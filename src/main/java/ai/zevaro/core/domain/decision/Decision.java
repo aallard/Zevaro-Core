@@ -2,8 +2,11 @@ package ai.zevaro.core.domain.decision;
 
 import ai.zevaro.core.domain.hypothesis.Hypothesis;
 import ai.zevaro.core.domain.outcome.Outcome;
+import ai.zevaro.core.domain.queue.DecisionQueue;
+import ai.zevaro.core.domain.stakeholder.Stakeholder;
 import ai.zevaro.core.domain.team.Team;
 import ai.zevaro.core.domain.user.User;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -16,6 +19,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,14 +30,19 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "decisions", indexes = {
+@Table(name = "decisions", schema = "core", indexes = {
         @Index(name = "idx_decision_tenant_status", columnList = "tenant_id, status"),
         @Index(name = "idx_decision_tenant_priority", columnList = "tenant_id, priority"),
         @Index(name = "idx_decision_owner", columnList = "owner_id"),
-        @Index(name = "idx_decision_assigned_to", columnList = "assigned_to_id")
+        @Index(name = "idx_decision_assigned_to", columnList = "assigned_to_id"),
+        @Index(name = "idx_decision_queue", columnList = "queue_id"),
+        @Index(name = "idx_decision_due", columnList = "due_at"),
+        @Index(name = "idx_decision_stakeholder", columnList = "stakeholder_id")
 })
 @EntityListeners(AuditingEntityListener.class)
 @Getter
@@ -92,6 +101,14 @@ public class Decision {
     @JoinColumn(name = "team_id")
     private Team team;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "queue_id")
+    private DecisionQueue queue;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "stakeholder_id")
+    private Stakeholder stakeholder;
+
     @Column(name = "sla_hours")
     private Integer slaHours;
 
@@ -120,6 +137,15 @@ public class Decision {
 
     @Column(name = "selected_option", columnDefinition = "text")
     private String selectedOption;
+
+    @Column(length = 2000)
+    private String resolution;
+
+    @Column(name = "was_escalated")
+    private Boolean wasEscalated = false;
+
+    @OneToMany(mappedBy = "decision", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DecisionVote> votes = new ArrayList<>();
 
     @Column(name = "blocked_items", columnDefinition = "text")
     private String blockedItems;

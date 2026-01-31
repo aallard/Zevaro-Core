@@ -19,7 +19,7 @@ public class UserMapper {
         return new UserResponse(
                 user.getId(),
                 user.getEmail(),
-                user.getName(),
+                user.getFullName(),
                 user.getTitle(),
                 user.getDepartment(),
                 user.getAvatarUrl(),
@@ -37,7 +37,7 @@ public class UserMapper {
         }
         return new UserSummary(
                 user.getId(),
-                user.getName(),
+                user.getFullName(),
                 user.getTitle(),
                 user.getAvatarUrl()
         );

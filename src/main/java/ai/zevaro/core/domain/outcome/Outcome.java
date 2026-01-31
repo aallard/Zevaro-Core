@@ -2,6 +2,7 @@ package ai.zevaro.core.domain.outcome;
 
 import ai.zevaro.core.domain.team.Team;
 import ai.zevaro.core.domain.user.User;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -14,6 +15,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,6 +26,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -103,6 +107,9 @@ public class Outcome {
 
     @Column(columnDefinition = "text")
     private String tags;
+
+    @OneToMany(mappedBy = "outcome", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<KeyResult> keyResults = new ArrayList<>();
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)

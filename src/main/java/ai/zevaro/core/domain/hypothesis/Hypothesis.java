@@ -68,6 +68,18 @@ public class Hypothesis {
     @Column(nullable = false)
     private HypothesisPriority priority = HypothesisPriority.MEDIUM;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private TShirtSize effort;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private TShirtSize impact;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private ConfidenceLevel confidence;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")
     private User owner;

@@ -3,7 +3,8 @@ package ai.zevaro.core.domain.user.dto;
 import java.util.UUID;
 
 public record UpdateUserRequest(
-        String name,
+        String firstName,
+        String lastName,
         String title,
         String department,
         String avatarUrl,
