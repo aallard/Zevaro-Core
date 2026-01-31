@@ -92,6 +92,6 @@ public interface DecisionRepository extends JpaRepository<Decision, UUID> {
     @Query("SELECT d FROM Decision d WHERE d.tenantId = :tenantId AND d.decidedAt BETWEEN :start AND :end")
     List<Decision> findResolvedBetween(@Param("tenantId") UUID tenantId, @Param("start") Instant start, @Param("end") Instant end);
 
-    @Query("SELECT AVG(EXTRACT(EPOCH FROM (d.decidedAt - d.createdAt))/3600) FROM Decision d WHERE d.tenantId = :tenantId AND d.decidedAt IS NOT NULL AND d.decidedAt > :since")
+    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (decided_at - created_at))/3600) FROM core.decisions WHERE tenant_id = :tenantId AND decided_at IS NOT NULL AND decided_at > :since", nativeQuery = true)
     Double getAverageDecisionTimeHours(@Param("tenantId") UUID tenantId, @Param("since") Instant since);
 }

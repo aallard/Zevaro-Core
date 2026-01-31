@@ -11,7 +11,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-@Component
+@Component("zevaroRequestContextFilter")
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
 public class RequestContextFilter extends OncePerRequestFilter {
 
