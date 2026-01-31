@@ -2,6 +2,7 @@ package ai.zevaro.core.domain.decision;
 
 import ai.zevaro.core.config.AppConstants;
 import ai.zevaro.core.domain.decision.dto.BlockedItem;
+import ai.zevaro.core.domain.decision.dto.CastVoteRequest;
 import ai.zevaro.core.domain.decision.dto.CommentResponse;
 import ai.zevaro.core.domain.decision.dto.CreateCommentRequest;
 import ai.zevaro.core.domain.decision.dto.CreateDecisionRequest;
@@ -11,11 +12,15 @@ import ai.zevaro.core.domain.decision.dto.EscalateDecisionRequest;
 import ai.zevaro.core.domain.decision.dto.ResolveDecisionRequest;
 import ai.zevaro.core.domain.decision.dto.UpdateCommentRequest;
 import ai.zevaro.core.domain.decision.dto.UpdateDecisionRequest;
+import ai.zevaro.core.domain.decision.dto.VoteResponse;
+import ai.zevaro.core.domain.decision.dto.VoteSummary;
 import ai.zevaro.core.domain.hypothesis.Hypothesis;
 import ai.zevaro.core.domain.hypothesis.HypothesisRepository;
 import ai.zevaro.core.domain.hypothesis.HypothesisStatus;
 import ai.zevaro.core.domain.outcome.Outcome;
 import ai.zevaro.core.domain.outcome.OutcomeRepository;
+import ai.zevaro.core.domain.queue.DecisionQueue;
+import ai.zevaro.core.domain.queue.DecisionQueueRepository;
 import ai.zevaro.core.domain.stakeholder.Stakeholder;
 import ai.zevaro.core.domain.stakeholder.StakeholderRepository;
 import ai.zevaro.core.domain.stakeholder.StakeholderService;
@@ -45,10 +50,12 @@ public class DecisionService {
 
     private final DecisionRepository decisionRepository;
     private final DecisionCommentRepository commentRepository;
+    private final DecisionVoteRepository voteRepository;
     private final UserRepository userRepository;
     private final TeamRepository teamRepository;
     private final OutcomeRepository outcomeRepository;
     private final HypothesisRepository hypothesisRepository;
+    private final DecisionQueueRepository queueRepository;
     private final StakeholderRepository stakeholderRepository;
     private final StakeholderService stakeholderService;
     private final DecisionMapper decisionMapper;
@@ -206,6 +213,18 @@ public class DecisionService {
             decision.setTeam(team);
         }
 
+        if (request.queueId() != null) {
+            DecisionQueue queue = queueRepository.findByIdAndTenantId(request.queueId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("DecisionQueue", "id", request.queueId()));
+            decision.setQueue(queue);
+        }
+
+        if (request.stakeholderId() != null) {
+            Stakeholder stakeholder = stakeholderRepository.findByIdAndTenantId(request.stakeholderId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Stakeholder", "id", request.stakeholderId()));
+            decision.setStakeholder(stakeholder);
+        }
+
         decision = decisionRepository.save(decision);
 
         if (decision.getAssignedTo() != null) {
@@ -253,6 +272,18 @@ public class DecisionService {
             Team team = teamRepository.findByIdAndTenantId(request.teamId(), tenantId)
                     .orElseThrow(() -> new ResourceNotFoundException("Team", "id", request.teamId()));
             decision.setTeam(team);
+        }
+
+        if (request.queueId() != null) {
+            DecisionQueue queue = queueRepository.findByIdAndTenantId(request.queueId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("DecisionQueue", "id", request.queueId()));
+            decision.setQueue(queue);
+        }
+
+        if (request.stakeholderId() != null) {
+            Stakeholder stakeholder = stakeholderRepository.findByIdAndTenantId(request.stakeholderId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Stakeholder", "id", request.stakeholderId()));
+            decision.setStakeholder(stakeholder);
         }
 
         if (request.slaHours() != null) {
@@ -535,6 +566,77 @@ public class DecisionService {
         return counts;
     }
 
+    // Vote methods
+
+    @Transactional(readOnly = true)
+    public List<VoteResponse> getVotes(UUID decisionId, UUID tenantId) {
+        decisionRepository.findByIdAndTenantId(decisionId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", decisionId));
+
+        return voteRepository.findByDecisionId(decisionId).stream()
+                .map(decisionMapper::toVoteResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public VoteSummary getVoteSummary(UUID decisionId, UUID tenantId) {
+        decisionRepository.findByIdAndTenantId(decisionId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", decisionId));
+
+        List<DecisionVote> votes = voteRepository.findByDecisionId(decisionId);
+        List<VoteResponse> voteResponses = votes.stream()
+                .map(decisionMapper::toVoteResponse)
+                .toList();
+
+        Map<VoteType, Long> countByType = new EnumMap<>(VoteType.class);
+        for (VoteType voteType : VoteType.values()) {
+            countByType.put(voteType, 0L);
+        }
+        for (DecisionVote vote : votes) {
+            countByType.merge(vote.getVote(), 1L, Long::sum);
+        }
+
+        return new VoteSummary(votes.size(), countByType, voteResponses);
+    }
+
+    @Transactional
+    public VoteResponse castVote(UUID decisionId, UUID tenantId, CastVoteRequest request, UUID userId) {
+        Decision decision = decisionRepository.findByIdAndTenantId(decisionId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", decisionId));
+
+        User user = userRepository.findByIdAndTenantId(userId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        DecisionVote vote = voteRepository.findByDecisionIdAndUserId(decisionId, userId)
+                .orElse(null);
+
+        if (vote == null) {
+            vote = DecisionVote.builder()
+                    .decision(decision)
+                    .user(user)
+                    .vote(request.vote())
+                    .comment(request.comment())
+                    .build();
+        } else {
+            vote.setVote(request.vote());
+            vote.setComment(request.comment());
+        }
+
+        vote = voteRepository.save(vote);
+        return decisionMapper.toVoteResponse(vote);
+    }
+
+    @Transactional
+    public void removeVote(UUID decisionId, UUID tenantId, UUID userId) {
+        decisionRepository.findByIdAndTenantId(decisionId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", decisionId));
+
+        DecisionVote vote = voteRepository.findByDecisionIdAndUserId(decisionId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Vote", "decisionId and userId", decisionId + "/" + userId));
+
+        voteRepository.delete(vote);
+    }
+
     @Transactional(readOnly = true)
     public Double getAverageDecisionTime(UUID tenantId, int days) {
         Instant since = Instant.now().minus(Duration.ofDays(days));
@@ -552,7 +654,8 @@ public class DecisionService {
 
     private DecisionResponse toResponseWithCount(Decision decision) {
         int commentCount = commentRepository.countByDecisionId(decision.getId());
-        return decisionMapper.toResponse(decision, commentCount);
+        int voteCount = (int) voteRepository.findByDecisionId(decision.getId()).size();
+        return decisionMapper.toResponse(decision, commentCount, voteCount);
     }
 
     private List<UUID> unblockHypotheses(Decision decision, UUID tenantId) {

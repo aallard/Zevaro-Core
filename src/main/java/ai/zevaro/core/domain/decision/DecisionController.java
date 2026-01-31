@@ -1,5 +1,6 @@
 package ai.zevaro.core.domain.decision;
 
+import ai.zevaro.core.domain.decision.dto.CastVoteRequest;
 import ai.zevaro.core.domain.decision.dto.CommentResponse;
 import ai.zevaro.core.domain.decision.dto.CreateCommentRequest;
 import ai.zevaro.core.domain.decision.dto.CreateDecisionRequest;
@@ -9,6 +10,8 @@ import ai.zevaro.core.domain.decision.dto.EscalateDecisionRequest;
 import ai.zevaro.core.domain.decision.dto.ResolveDecisionRequest;
 import ai.zevaro.core.domain.decision.dto.UpdateCommentRequest;
 import ai.zevaro.core.domain.decision.dto.UpdateDecisionRequest;
+import ai.zevaro.core.domain.decision.dto.VoteResponse;
+import ai.zevaro.core.domain.decision.dto.VoteSummary;
 import ai.zevaro.core.security.CurrentUser;
 import ai.zevaro.core.security.UserPrincipal;
 import jakarta.validation.Valid;
@@ -272,5 +275,42 @@ public class DecisionController {
             @RequestParam(defaultValue = "30") int days,
             @CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(decisionService.getAverageDecisionTime(user.getTenantId(), days));
+    }
+
+    // Vote endpoints
+
+    @GetMapping("/{id}/votes")
+    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
+    public ResponseEntity<List<VoteResponse>> getVotes(
+            @PathVariable UUID id,
+            @CurrentUser UserPrincipal user) {
+        return ResponseEntity.ok(decisionService.getVotes(id, user.getTenantId()));
+    }
+
+    @GetMapping("/{id}/votes/summary")
+    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
+    public ResponseEntity<VoteSummary> getVoteSummary(
+            @PathVariable UUID id,
+            @CurrentUser UserPrincipal user) {
+        return ResponseEntity.ok(decisionService.getVoteSummary(id, user.getTenantId()));
+    }
+
+    @PostMapping("/{id}/votes")
+    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:vote')")
+    public ResponseEntity<VoteResponse> castVote(
+            @PathVariable UUID id,
+            @Valid @RequestBody CastVoteRequest request,
+            @CurrentUser UserPrincipal user) {
+        VoteResponse vote = decisionService.castVote(id, user.getTenantId(), request, user.getUserId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(vote);
+    }
+
+    @DeleteMapping("/{id}/votes")
+    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:vote')")
+    public ResponseEntity<Void> removeVote(
+            @PathVariable UUID id,
+            @CurrentUser UserPrincipal user) {
+        decisionService.removeVote(id, user.getTenantId(), user.getUserId());
+        return ResponseEntity.noContent().build();
     }
 }

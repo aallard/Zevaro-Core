@@ -40,6 +40,9 @@ public class HypothesisMapper {
                 hypothesis.getMeasurementCriteria(),
                 hypothesis.getStatus(),
                 hypothesis.getPriority(),
+                hypothesis.getEffort(),
+                hypothesis.getImpact(),
+                hypothesis.getConfidence(),
                 hypothesis.getOwner() != null ? userMapper.toSummary(hypothesis.getOwner()) : null,
                 parseJsonToMap(hypothesis.getExperimentConfig()),
                 parseJsonToMap(hypothesis.getExperimentResults()),
@@ -77,6 +80,9 @@ public class HypothesisMapper {
         hypothesis.setExpectedResult(request.expectedResult());
         hypothesis.setMeasurementCriteria(request.measurementCriteria());
         hypothesis.setPriority(request.priority() != null ? request.priority() : HypothesisPriority.MEDIUM);
+        hypothesis.setEffort(request.effort());
+        hypothesis.setImpact(request.impact());
+        hypothesis.setConfidence(request.confidence());
         hypothesis.setExperimentConfig(mapToJson(request.experimentConfig()));
         hypothesis.setTags(listToJson(request.tags()));
         hypothesis.setCreatedById(createdById);
@@ -99,6 +105,15 @@ public class HypothesisMapper {
         }
         if (request.priority() != null) {
             hypothesis.setPriority(request.priority());
+        }
+        if (request.effort() != null) {
+            hypothesis.setEffort(request.effort());
+        }
+        if (request.impact() != null) {
+            hypothesis.setImpact(request.impact());
+        }
+        if (request.confidence() != null) {
+            hypothesis.setConfidence(request.confidence());
         }
         if (request.experimentConfig() != null) {
             hypothesis.setExperimentConfig(mapToJson(request.experimentConfig()));

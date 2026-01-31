@@ -1,7 +1,9 @@
 package ai.zevaro.core.domain.hypothesis.dto;
 
+import ai.zevaro.core.domain.hypothesis.ConfidenceLevel;
 import ai.zevaro.core.domain.hypothesis.HypothesisPriority;
 import ai.zevaro.core.domain.hypothesis.HypothesisStatus;
+import ai.zevaro.core.domain.hypothesis.TShirtSize;
 import ai.zevaro.core.domain.outcome.dto.OutcomeSummary;
 import ai.zevaro.core.domain.user.dto.UserSummary;
 
@@ -19,6 +21,9 @@ public record HypothesisResponse(
         String measurementCriteria,
         HypothesisStatus status,
         HypothesisPriority priority,
+        TShirtSize effort,
+        TShirtSize impact,
+        ConfidenceLevel confidence,
         UserSummary owner,
         Map<String, Object> experimentConfig,
         Map<String, Object> experimentResults,

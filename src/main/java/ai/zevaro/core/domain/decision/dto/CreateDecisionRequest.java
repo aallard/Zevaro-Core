@@ -33,6 +33,8 @@ public record CreateDecisionRequest(
         UUID outcomeId,
         UUID hypothesisId,
         UUID teamId,
+        UUID queueId,
+        UUID stakeholderId,
 
         @Min(value = 1, message = "SLA hours must be at least 1")
         @Max(value = 720, message = "SLA hours cannot exceed 720 (30 days)")

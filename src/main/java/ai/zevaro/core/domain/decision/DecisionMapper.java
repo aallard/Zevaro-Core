@@ -7,8 +7,11 @@ import ai.zevaro.core.domain.decision.dto.DecisionOption;
 import ai.zevaro.core.domain.decision.dto.DecisionResponse;
 import ai.zevaro.core.domain.decision.dto.DecisionSummary;
 import ai.zevaro.core.domain.decision.dto.UpdateDecisionRequest;
+import ai.zevaro.core.domain.decision.dto.VoteResponse;
 import ai.zevaro.core.domain.hypothesis.HypothesisMapper;
 import ai.zevaro.core.domain.outcome.OutcomeMapper;
+import ai.zevaro.core.domain.queue.DecisionQueueMapper;
+import ai.zevaro.core.domain.stakeholder.StakeholderMapper;
 import ai.zevaro.core.domain.team.TeamMapper;
 import ai.zevaro.core.domain.user.UserMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -32,8 +35,14 @@ public class DecisionMapper {
     private final TeamMapper teamMapper;
     private final OutcomeMapper outcomeMapper;
     private final HypothesisMapper hypothesisMapper;
+    private final DecisionQueueMapper queueMapper;
+    private final StakeholderMapper stakeholderMapper;
 
     public DecisionResponse toResponse(Decision decision, int commentCount) {
+        return toResponse(decision, commentCount, 0);
+    }
+
+    public DecisionResponse toResponse(Decision decision, int commentCount, int voteCount) {
         if (decision == null) {
             return null;
         }
@@ -52,6 +61,8 @@ public class DecisionMapper {
                 decision.getOutcome() != null ? outcomeMapper.toSummary(decision.getOutcome()) : null,
                 decision.getHypothesis() != null ? hypothesisMapper.toSummary(decision.getHypothesis()) : null,
                 decision.getTeam() != null ? teamMapper.toSummary(decision.getTeam()) : null,
+                decision.getQueue() != null ? queueMapper.toSummary(decision.getQueue()) : null,
+                decision.getStakeholder() != null ? stakeholderMapper.toSummary(decision.getStakeholder()) : null,
                 decision.getSlaHours(),
                 decision.getDueAt(),
                 decision.isOverdue(),
@@ -63,8 +74,11 @@ public class DecisionMapper {
                 decision.getDecidedAt(),
                 decision.getDecisionRationale(),
                 parseSelectedOption(decision.getSelectedOption()),
+                decision.getResolution(),
+                decision.getWasEscalated() != null && decision.getWasEscalated(),
                 parseBlockedItems(decision.getBlockedItems()),
                 commentCount,
+                voteCount,
                 parseJsonToStringMap(decision.getExternalRefs()),
                 parseJsonToList(decision.getTags()),
                 decision.getCreatedAt(),
@@ -151,6 +165,19 @@ public class DecisionMapper {
                 comment.isEdited(),
                 comment.getCreatedAt(),
                 comment.getUpdatedAt()
+        );
+    }
+
+    public VoteResponse toVoteResponse(DecisionVote vote) {
+        if (vote == null) {
+            return null;
+        }
+        return new VoteResponse(
+                vote.getId(),
+                vote.getUser() != null ? userMapper.toSummary(vote.getUser()) : null,
+                vote.getVote(),
+                vote.getComment(),
+                vote.getCreatedAt()
         );
     }
 

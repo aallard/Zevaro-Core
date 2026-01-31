@@ -5,6 +5,8 @@ import ai.zevaro.core.domain.decision.DecisionStatus;
 import ai.zevaro.core.domain.decision.DecisionType;
 import ai.zevaro.core.domain.hypothesis.dto.HypothesisSummary;
 import ai.zevaro.core.domain.outcome.dto.OutcomeSummary;
+import ai.zevaro.core.domain.queue.dto.QueueSummary;
+import ai.zevaro.core.domain.stakeholder.dto.StakeholderSummary;
 import ai.zevaro.core.domain.team.dto.TeamSummary;
 import ai.zevaro.core.domain.user.dto.UserSummary;
 
@@ -27,6 +29,8 @@ public record DecisionResponse(
         OutcomeSummary outcome,
         HypothesisSummary hypothesis,
         TeamSummary team,
+        QueueSummary queue,
+        StakeholderSummary stakeholder,
         Integer slaHours,
         Instant dueAt,
         boolean overdue,
@@ -38,8 +42,11 @@ public record DecisionResponse(
         Instant decidedAt,
         String decisionRationale,
         DecisionOption selectedOption,
+        String resolution,
+        boolean wasEscalated,
         List<BlockedItem> blockedItems,
         int commentCount,
+        int voteCount,
         Map<String, String> externalRefs,
         List<String> tags,
         Instant createdAt,

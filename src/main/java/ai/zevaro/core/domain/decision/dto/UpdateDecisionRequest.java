@@ -20,6 +20,8 @@ public record UpdateDecisionRequest(
         UUID outcomeId,
         UUID hypothesisId,
         UUID teamId,
+        UUID queueId,
+        UUID stakeholderId,
         Integer slaHours,
         List<BlockedItem> blockedItems,
         Map<String, String> externalRefs,
