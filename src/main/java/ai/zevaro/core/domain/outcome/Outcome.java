@@ -94,6 +94,10 @@ public class Outcome {
     @JoinColumn(name = "validated_by_id")
     private User validatedBy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invalidated_by_id")
+    private User invalidatedBy;
+
     @Column(name = "external_refs", columnDefinition = "text")
     private String externalRefs;
 

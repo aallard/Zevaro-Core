@@ -32,7 +32,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
@@ -47,7 +47,11 @@ public class AuthService {
 
         userRepository.updateLastLogin(user.getId(), Instant.now());
 
-        return buildAuthResponse(user);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user);
+        user.setRefreshToken(passwordEncoder.encode(refreshToken));
+        userRepository.save(user);
+
+        return buildAuthResponse(user, refreshToken);
     }
 
     @Transactional
@@ -78,11 +82,11 @@ public class AuthService {
         user.setActive(true);
 
         String refreshToken = jwtTokenProvider.generateRefreshToken(user);
-        user.setRefreshToken(refreshToken);
+        user.setRefreshToken(passwordEncoder.encode(refreshToken));
 
         user = userRepository.save(user);
 
-        return buildAuthResponse(user);
+        return buildAuthResponse(user, refreshToken);
     }
 
     @Transactional
@@ -101,15 +105,15 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
-        if (!request.refreshToken().equals(user.getRefreshToken())) {
+        if (user.getRefreshToken() == null || !passwordEncoder.matches(request.refreshToken(), user.getRefreshToken())) {
             throw new BadCredentialsException("Refresh token has been revoked");
         }
 
         String newRefreshToken = jwtTokenProvider.generateRefreshToken(user);
-        user.setRefreshToken(newRefreshToken);
+        user.setRefreshToken(passwordEncoder.encode(newRefreshToken));
         userRepository.save(user);
 
-        return buildAuthResponse(user);
+        return buildAuthResponse(user, newRefreshToken);
     }
 
     @Transactional
@@ -120,18 +124,12 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    private AuthResponse buildAuthResponse(User user) {
+    private AuthResponse buildAuthResponse(User user, String rawRefreshToken) {
         String accessToken = jwtTokenProvider.generateToken(user);
-        String refreshToken = user.getRefreshToken();
-        if (refreshToken == null) {
-            refreshToken = jwtTokenProvider.generateRefreshToken(user);
-            user.setRefreshToken(refreshToken);
-            userRepository.save(user);
-        }
 
         return new AuthResponse(
                 accessToken,
-                refreshToken,
+                rawRefreshToken,
                 jwtTokenProvider.getJwtExpiration(),
                 new AuthResponse.UserInfo(
                         user.getId().toString(),

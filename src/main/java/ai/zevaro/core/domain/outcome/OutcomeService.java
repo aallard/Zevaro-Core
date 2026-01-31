@@ -198,7 +198,7 @@ public class OutcomeService {
 
         outcome.setStatus(OutcomeStatus.INVALIDATED);
         outcome.setInvalidatedAt(Instant.now());
-        outcome.setValidatedBy(invalidatedBy);
+        outcome.setInvalidatedBy(invalidatedBy);
         outcome.setValidationNotes(request.reason());
 
         if (request.finalMetrics() != null) {
