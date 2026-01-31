@@ -544,3 +544,114 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 - [ ] Kafka event published on state change
 - [ ] Tests written
 - [ ] Committed immediately after working
+
+---
+
+## Kafka Integration Requirements
+
+> **CRITICAL:** These settings are MANDATORY. A 278GB log file incident occurred due to improper Kafka configuration.
+
+### The 278GB Log Incident (January 2026)
+
+**Root Cause:** When Kafka is unavailable, Spring Kafka's default retry settings (50ms backoff) combined with multiple consumer threads created a log flooding scenario:
+- 3 Kafka listeners × 3 concurrent threads = 9 retry loops
+- Each loop logging at 50ms intervals = ~180 log entries/second
+- Result: 278GB log file in hours, disk full, service crash
+
+### Mandatory Producer Settings (Zevaro-Core)
+
+```yaml
+spring:
+  kafka:
+    enabled: ${KAFKA_ENABLED:true}
+    producer:
+      properties:
+        reconnect.backoff.ms: 1000        # 1 second (NOT default 50ms)
+        reconnect.backoff.max.ms: 60000   # 60 seconds max
+        retry.backoff.ms: 1000
+        request.timeout.ms: 30000
+        delivery.timeout.ms: 120000
+```
+
+### Circuit Breaker Pattern (KafkaProducerService)
+
+**CRITICAL:** Never use KafkaTemplate directly. Always use KafkaProducerService:
+
+```java
+@Service
+@ConditionalOnProperty(name = "spring.kafka.enabled", havingValue = "true", matchIfMissing = true)
+public class KafkaProducerService {
+    // Circuit breaker: opens after 5 failures, resets after 5 minutes
+    // Rate-limited logging: max 1 log per minute when circuit is open
+    // Tracks dropped event count for monitoring
+}
+```
+
+### Mandatory Consumer Settings (Zevaro-Analytics)
+
+```yaml
+spring:
+  kafka:
+    enabled: ${KAFKA_ENABLED:true}
+    consumer:
+      properties:
+        reconnect.backoff.ms: 1000
+        reconnect.backoff.max.ms: 60000
+        retry.backoff.ms: 1000
+    listener:
+      concurrency: 1  # CRITICAL: Reduced from 3 to prevent 9 retry loops
+```
+
+### Error Handler with Exponential Backoff
+
+```java
+factory.setCommonErrorHandler(new DefaultErrorHandler(
+    new ExponentialBackOff(1000L, 2.0)  // 1s, 2s, 4s, 8s...
+));
+```
+
+### Logback Configuration (MANDATORY)
+
+Both services MUST have a separate Kafka log file with strict size limits:
+
+```xml
+<!-- Separate Kafka log file with strict size limits -->
+<appender name="KAFKA_RATE_LIMITED" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${LOG_FILE}-kafka.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+        <maxFileSize>10MB</maxFileSize>
+        <maxHistory>3</maxHistory>
+        <totalSizeCap>50MB</totalSizeCap>
+    </rollingPolicy>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+        <level>WARN</level>
+    </filter>
+</appender>
+
+<!-- Kafka client loggers - ERROR only, separate file -->
+<logger name="org.apache.kafka" level="ERROR" additivity="false">
+    <appender-ref ref="KAFKA_RATE_LIMITED"/>
+</logger>
+```
+
+### KAFKA_ENABLED Toggle
+
+For local development without Kafka:
+
+```bash
+export KAFKA_ENABLED=false
+./mvnw spring-boot:run
+```
+
+When disabled:
+- **Core:** KafkaProducerServiceNoOp drops all events silently
+- **Analytics:** @ConditionalOnProperty prevents consumer bean creation
+
+### Checklist for Kafka Changes
+
+- [ ] Never use KafkaTemplate directly (use KafkaProducerService)
+- [ ] Verify reconnect.backoff.ms >= 1000 (NOT 50ms default)
+- [ ] Verify listener concurrency = 1 for consumers
+- [ ] Confirm logback-spring.xml has separate Kafka appender
+- [ ] Test with Kafka DOWN before deploying
+- [ ] Monitor dropped event count in production
