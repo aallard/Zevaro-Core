@@ -1,0 +1,5068 @@
+openapi: 3.0.3
+info:
+  title: Zevaro Core API
+  description: |
+    Zevaro Core API for outcome-driven product development and decision management.
+
+    ## Authentication
+    This API uses JWT Bearer token authentication. Obtain tokens via the `/api/v1/auth/login` endpoint.
+
+    ## Multi-tenancy
+    All data is isolated by tenant. The tenant context is extracted from the JWT token.
+
+    ## Rate Limiting
+    Authentication endpoints are rate-limited. Exceeding limits returns HTTP 429.
+  version: 1.0.0
+  contact:
+    name: Zevaro Support
+    email: support@zevaro.ai
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.zevaro.ai
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication and token management
+  - name: Users
+    description: User management operations
+  - name: Roles
+    description: Role and permission management
+  - name: Teams
+    description: Team management and membership
+  - name: Outcomes
+    description: Outcome tracking and validation
+  - name: Key Results
+    description: Key results for outcomes (OKR-style)
+  - name: Decisions
+    description: Decision tracking, voting, and escalation
+  - name: Hypotheses
+    description: Hypothesis management and experimentation
+  - name: Stakeholders
+    description: Stakeholder management and engagement tracking
+  - name: Queues
+    description: Decision queue management
+  - name: Audit
+    description: Audit log access and reporting
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ============================================
+  # AUTHENTICATION ENDPOINTS
+  # ============================================
+  /api/v1/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Authenticate user and obtain tokens
+      description: Validates credentials and returns JWT access and refresh tokens.
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Creates a new user account and returns authentication tokens.
+      operationId: register
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Exchanges a valid refresh token for new access and refresh tokens.
+      operationId: refreshToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout and invalidate tokens
+      description: Invalidates the current user's refresh token.
+      operationId: logout
+      responses:
+        '204':
+          description: Logout successful
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================
+  # USER ENDPOINTS
+  # ============================================
+  /api/v1/users:
+    get:
+      tags:
+        - Users
+      summary: List users
+      description: Returns all users in the tenant, optionally filtered by department.
+      operationId: getUsers
+      parameters:
+        - name: department
+          in: query
+          description: Filter by department
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID
+      description: Returns a single user by their UUID.
+      operationId: getUserById
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Users
+      summary: Update user
+      description: Updates user profile information.
+      operationId: updateUser
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Users
+      summary: Deactivate user
+      description: Deactivates a user account (soft delete).
+      operationId: deactivateUser
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '204':
+          description: User deactivated successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/users/me:
+    get:
+      tags:
+        - Users
+      summary: Get current user
+      description: Returns the currently authenticated user's profile.
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: Current user details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/users/{id}/direct-reports:
+    get:
+      tags:
+        - Users
+      summary: Get direct reports
+      description: Returns all users who report directly to the specified user.
+      operationId: getDirectReports
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: List of direct reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/users/{id}/role:
+    put:
+      tags:
+        - Users
+      summary: Assign role to user
+      description: Assigns a role to the specified user.
+      operationId: assignRole
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - name: roleId
+          in: query
+          description: Role UUID to assign
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Role assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ============================================
+  # ROLE ENDPOINTS
+  # ============================================
+  /api/v1/roles:
+    get:
+      tags:
+        - Roles
+      summary: List available roles
+      description: Returns all roles available in the tenant.
+      operationId: getAvailableRoles
+      responses:
+        '200':
+          description: List of roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+        - Roles
+      summary: Create custom role
+      description: Creates a new custom role with specified permissions.
+      operationId: createCustomRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+      responses:
+        '201':
+          description: Role created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/roles/{id}:
+    get:
+      tags:
+        - Roles
+      summary: Get role by ID
+      description: Returns a single role by its UUID.
+      operationId: getRoleById
+      parameters:
+        - name: id
+          in: path
+          description: Role UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Role details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/roles/categories:
+    get:
+      tags:
+        - Roles
+      summary: List role categories
+      description: Returns all available role categories.
+      operationId: getCategories
+      responses:
+        '200':
+          description: List of role categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleCategory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================
+  # TEAM ENDPOINTS
+  # ============================================
+  /api/v1/teams:
+    get:
+      tags:
+        - Teams
+      summary: List teams
+      description: Returns all teams in the tenant.
+      operationId: getTeams
+      responses:
+        '200':
+          description: List of teams
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+        - Teams
+      summary: Create team
+      description: Creates a new team.
+      operationId: createTeam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTeamRequest'
+      responses:
+        '201':
+          description: Team created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/teams/paged:
+    get:
+      tags:
+        - Teams
+      summary: List teams (paginated)
+      description: Returns teams with pagination.
+      operationId: getTeamsPaged
+      parameters:
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Paginated list of teams
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedTeamResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/teams/{id}:
+    get:
+      tags:
+        - Teams
+      summary: Get team by ID
+      description: Returns a single team with full details.
+      operationId: getTeam
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      responses:
+        '200':
+          description: Team details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Teams
+      summary: Update team
+      description: Updates team information.
+      operationId: updateTeam
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTeamRequest'
+      responses:
+        '200':
+          description: Team updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Teams
+      summary: Delete team
+      description: Deletes a team.
+      operationId: deleteTeam
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      responses:
+        '204':
+          description: Team deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/teams/slug/{slug}:
+    get:
+      tags:
+        - Teams
+      summary: Get team by slug
+      description: Returns a team by its URL-friendly slug.
+      operationId: getTeamBySlug
+      parameters:
+        - name: slug
+          in: path
+          description: Team slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Team details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/teams/my-teams:
+    get:
+      tags:
+        - Teams
+      summary: Get current user's teams
+      description: Returns all teams the current user is a member of.
+      operationId: getMyTeams
+      responses:
+        '200':
+          description: List of user's teams
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/teams/{id}/members:
+    get:
+      tags:
+        - Teams
+      summary: Get team members
+      description: Returns all members of a team.
+      operationId: getMembers
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      responses:
+        '200':
+          description: List of team members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamMemberResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Teams
+      summary: Add team member
+      description: Adds a user to a team with a specified role.
+      operationId: addMember
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddTeamMemberRequest'
+      responses:
+        '201':
+          description: Member added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamMemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/teams/{id}/members/{userId}:
+    put:
+      tags:
+        - Teams
+      summary: Update team member
+      description: Updates a team member's role.
+      operationId: updateMember
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTeamMemberRequest'
+      responses:
+        '200':
+          description: Member updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamMemberResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Teams
+      summary: Remove team member
+      description: Removes a user from a team.
+      operationId: removeMember
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '204':
+          description: Member removed successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ============================================
+  # OUTCOME ENDPOINTS
+  # ============================================
+  /api/v1/outcomes:
+    get:
+      tags:
+        - Outcomes
+      summary: List outcomes
+      description: Returns outcomes with optional filtering.
+      operationId: getOutcomes
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/OutcomeStatus'
+        - name: teamId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: priority
+          in: query
+          schema:
+            $ref: '#/components/schemas/OutcomePriority'
+      responses:
+        '200':
+          description: List of outcomes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutcomeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+        - Outcomes
+      summary: Create outcome
+      description: Creates a new outcome.
+      operationId: createOutcome
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOutcomeRequest'
+      responses:
+        '201':
+          description: Outcome created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutcomeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/outcomes/paged:
+    get:
+      tags:
+        - Outcomes
+      summary: List outcomes (paginated)
+      description: Returns outcomes with pagination and sorting.
+      operationId: getOutcomesPaged
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/OutcomeStatus'
+        - name: teamId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: priority
+          in: query
+          schema:
+            $ref: '#/components/schemas/OutcomePriority'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortDir'
+      responses:
+        '200':
+          description: Paginated list of outcomes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedOutcomeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/outcomes/{id}:
+    get:
+      tags:
+        - Outcomes
+      summary: Get outcome by ID
+      description: Returns a single outcome by its UUID.
+      operationId: getOutcome
+      parameters:
+        - $ref: '#/components/parameters/OutcomeId'
+      responses:
+        '200':
+          description: Outcome details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutcomeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Outcomes
+      summary: Update outcome
+      description: Updates an existing outcome.
+      operationId: updateOutcome
+      parameters:
+        - $ref: '#/components/parameters/OutcomeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOutcomeRequest'
+      responses:
+        '200':
+          description: Outcome updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutcomeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Outcomes
+      summary: Delete outcome
+      description: Deletes an outcome.
+      operationId: deleteOutcome
+      parameters:
+        - $ref: '#/components/parameters/OutcomeId'
+      responses:
+        '204':
+          description: Outcome deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/outcomes/my-outcomes:
+    get:
+      tags:
+        - Outcomes
+      summary: Get current user's outcomes
+      description: Returns outcomes owned by the current user.
+      operationId: getMyOutcomes
+      responses:
+        '200':
+          description: List of user's outcomes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutcomeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/outcomes/team/{teamId}:
+    get:
+      tags:
+        - Outcomes
+      summary: Get team outcomes
+      description: Returns all outcomes for a specific team.
+      operationId: getTeamOutcomes
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      responses:
+        '200':
+          description: List of team outcomes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutcomeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/outcomes/overdue:
+    get:
+      tags:
+        - Outcomes
+      summary: Get overdue outcomes
+      description: Returns outcomes past their target date.
+      operationId: getOverdueOutcomes
+      responses:
+        '200':
+          description: List of overdue outcomes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutcomeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/outcomes/{id}/start:
+    post:
+      tags:
+        - Outcomes
+      summary: Start outcome
+      description: Transitions outcome from NOT_STARTED to IN_PROGRESS.
+      operationId: startOutcome
+      parameters:
+        - $ref: '#/components/parameters/OutcomeId'
+      responses:
+        '200':
+          description: Outcome started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutcomeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/outcomes/{id}/validate:
+    post:
+      tags:
+        - Outcomes
+      summary: Validate outcome
+      description: Marks an outcome as validated (success criteria met).
+      operationId: validateOutcome
+      parameters:
+        - $ref: '#/components/parameters/OutcomeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateOutcomeRequest'
+      responses:
+        '200':
+          description: Outcome validated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutcomeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/outcomes/{id}/invalidate:
+    post:
+      tags:
+        - Outcomes
+      summary: Invalidate outcome
+      description: Marks an outcome as invalidated (success criteria not met).
+      operationId: invalidateOutcome
+      parameters:
+        - $ref: '#/components/parameters/OutcomeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvalidateOutcomeRequest'
+      responses:
+        '200':
+          description: Outcome invalidated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutcomeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/outcomes/{id}/abandon:
+    post:
+      tags:
+        - Outcomes
+      summary: Abandon outcome
+      description: Abandons an outcome with a reason.
+      operationId: abandonOutcome
+      parameters:
+        - $ref: '#/components/parameters/OutcomeId'
+        - name: reason
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Outcome abandoned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutcomeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/outcomes/{id}/metrics:
+    patch:
+      tags:
+        - Outcomes
+      summary: Update outcome metrics
+      description: Updates the current metrics for an outcome.
+      operationId: updateMetrics
+      parameters:
+        - $ref: '#/components/parameters/OutcomeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Metrics updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutcomeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/outcomes/stats:
+    get:
+      tags:
+        - Outcomes
+      summary: Get outcome status counts
+      description: Returns count of outcomes grouped by status.
+      operationId: getOutcomeStatusCounts
+      responses:
+        '200':
+          description: Status counts
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                  format: int64
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ============================================
+  # KEY RESULT ENDPOINTS
+  # ============================================
+  /api/v1/outcomes/{outcomeId}/key-results:
+    get:
+      tags:
+        - Key Results
+      summary: List key results
+      description: Returns all key results for an outcome.
+      operationId: getKeyResults
+      parameters:
+        - $ref: '#/components/parameters/OutcomeId'
+      responses:
+        '200':
+          description: List of key results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/KeyResultResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Key Results
+      summary: Create key result
+      description: Creates a new key result for an outcome.
+      operationId: createKeyResult
+      parameters:
+        - $ref: '#/components/parameters/OutcomeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateKeyResultRequest'
+      responses:
+        '201':
+          description: Key result created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeyResultResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/outcomes/{outcomeId}/key-results/{id}:
+    get:
+      tags:
+        - Key Results
+      summary: Get key result by ID
+      description: Returns a single key result.
+      operationId: getKeyResult
+      parameters:
+        - $ref: '#/components/parameters/OutcomeId'
+        - $ref: '#/components/parameters/KeyResultId'
+      responses:
+        '200':
+          description: Key result details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeyResultResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Key Results
+      summary: Update key result
+      description: Updates an existing key result.
+      operationId: updateKeyResult
+      parameters:
+        - $ref: '#/components/parameters/OutcomeId'
+        - $ref: '#/components/parameters/KeyResultId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateKeyResultRequest'
+      responses:
+        '200':
+          description: Key result updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeyResultResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Key Results
+      summary: Delete key result
+      description: Deletes a key result.
+      operationId: deleteKeyResult
+      parameters:
+        - $ref: '#/components/parameters/OutcomeId'
+        - $ref: '#/components/parameters/KeyResultId'
+      responses:
+        '204':
+          description: Key result deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/outcomes/{outcomeId}/key-results/{id}/progress:
+    post:
+      tags:
+        - Key Results
+      summary: Update key result progress
+      description: Updates the current value of a key result.
+      operationId: updateProgress
+      parameters:
+        - $ref: '#/components/parameters/OutcomeId'
+        - $ref: '#/components/parameters/KeyResultId'
+        - name: value
+          in: query
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Progress updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeyResultResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ============================================
+  # DECISION ENDPOINTS
+  # ============================================
+  /api/v1/decisions:
+    get:
+      tags:
+        - Decisions
+      summary: List decisions
+      description: Returns decisions with optional filtering.
+      operationId: getDecisions
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/DecisionStatus'
+        - name: priority
+          in: query
+          schema:
+            $ref: '#/components/schemas/DecisionPriority'
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/DecisionType'
+        - name: teamId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of decisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+        - Decisions
+      summary: Create decision
+      description: Creates a new decision.
+      operationId: createDecision
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDecisionRequest'
+      responses:
+        '201':
+          description: Decision created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/decisions/paged:
+    get:
+      tags:
+        - Decisions
+      summary: List decisions (paginated)
+      description: Returns decisions with pagination and sorting.
+      operationId: getDecisionsPaged
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/DecisionStatus'
+        - name: priority
+          in: query
+          schema:
+            $ref: '#/components/schemas/DecisionPriority'
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/DecisionType'
+        - name: teamId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortDir'
+      responses:
+        '200':
+          description: Paginated list of decisions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedDecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/decisions/{id}:
+    get:
+      tags:
+        - Decisions
+      summary: Get decision by ID
+      description: Returns a single decision by its UUID.
+      operationId: getDecision
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+      responses:
+        '200':
+          description: Decision details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Decisions
+      summary: Update decision
+      description: Updates an existing decision.
+      operationId: updateDecision
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDecisionRequest'
+      responses:
+        '200':
+          description: Decision updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Decisions
+      summary: Delete decision
+      description: Deletes a decision.
+      operationId: deleteDecision
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+      responses:
+        '204':
+          description: Decision deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/decisions/queue:
+    get:
+      tags:
+        - Decisions
+      summary: Get decision queue
+      description: Returns the decision queue with prioritized decisions.
+      operationId: getDecisionQueue
+      responses:
+        '200':
+          description: Decision queue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionQueueResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/decisions/my-pending:
+    get:
+      tags:
+        - Decisions
+      summary: Get my pending decisions
+      description: Returns decisions assigned to the current user that need action.
+      operationId: getMyPendingDecisions
+      responses:
+        '200':
+          description: List of pending decisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/decisions/pending:
+    get:
+      tags:
+        - Decisions
+      summary: Get pending decisions
+      description: Returns all pending decisions, optionally filtered by team.
+      operationId: getPendingDecisions
+      parameters:
+        - name: teamId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of pending decisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/decisions/blocking:
+    get:
+      tags:
+        - Decisions
+      summary: Get blocking decisions
+      description: Returns decisions with BLOCKING priority.
+      operationId: getBlockingDecisions
+      responses:
+        '200':
+          description: List of blocking decisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/decisions/overdue:
+    get:
+      tags:
+        - Decisions
+      summary: Get overdue decisions
+      description: Returns decisions past their SLA due date.
+      operationId: getOverdueDecisions
+      responses:
+        '200':
+          description: List of overdue decisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/decisions/outcome/{outcomeId}:
+    get:
+      tags:
+        - Decisions
+      summary: Get decisions for outcome
+      description: Returns all decisions linked to an outcome.
+      operationId: getDecisionsForOutcome
+      parameters:
+        - $ref: '#/components/parameters/OutcomeId'
+      responses:
+        '200':
+          description: List of decisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/decisions/hypothesis/{hypothesisId}:
+    get:
+      tags:
+        - Decisions
+      summary: Get decisions for hypothesis
+      description: Returns all decisions linked to a hypothesis.
+      operationId: getDecisionsForHypothesis
+      parameters:
+        - $ref: '#/components/parameters/HypothesisId'
+      responses:
+        '200':
+          description: List of decisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/decisions/{id}/start-discussion:
+    post:
+      tags:
+        - Decisions
+      summary: Start discussion
+      description: Transitions decision to UNDER_DISCUSSION status.
+      operationId: startDiscussion
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+      responses:
+        '200':
+          description: Discussion started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/decisions/{id}/resolve:
+    post:
+      tags:
+        - Decisions
+      summary: Resolve decision
+      description: Resolves a decision with a selected option and rationale.
+      operationId: resolveDecision
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveDecisionRequest'
+      responses:
+        '200':
+          description: Decision resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/decisions/{id}/implement:
+    post:
+      tags:
+        - Decisions
+      summary: Mark decision implemented
+      description: Marks a resolved decision as implemented.
+      operationId: implementDecision
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+      responses:
+        '200':
+          description: Decision marked as implemented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/decisions/{id}/defer:
+    post:
+      tags:
+        - Decisions
+      summary: Defer decision
+      description: Defers a decision with a reason.
+      operationId: deferDecision
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+        - name: reason
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Decision deferred
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/decisions/{id}/cancel:
+    post:
+      tags:
+        - Decisions
+      summary: Cancel decision
+      description: Cancels a decision with a reason.
+      operationId: cancelDecision
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+        - name: reason
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Decision cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/decisions/{id}/reopen:
+    post:
+      tags:
+        - Decisions
+      summary: Reopen decision
+      description: Reopens a cancelled or deferred decision.
+      operationId: reopenDecision
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+      responses:
+        '200':
+          description: Decision reopened
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/decisions/{id}/escalate:
+    post:
+      tags:
+        - Decisions
+      summary: Escalate decision
+      description: Escalates a decision to another user.
+      operationId: escalateDecision
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EscalateDecisionRequest'
+      responses:
+        '200':
+          description: Decision escalated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/decisions/{id}/assign:
+    post:
+      tags:
+        - Decisions
+      summary: Assign decision
+      description: Assigns a decision to a user.
+      operationId: assignDecision
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+        - name: assigneeId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Decision assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/decisions/{id}/reassign:
+    post:
+      tags:
+        - Decisions
+      summary: Reassign decision
+      description: Reassigns a decision to a different user.
+      operationId: reassignDecision
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+        - name: newAssigneeId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: reason
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Decision reassigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/decisions/{id}/comments:
+    get:
+      tags:
+        - Decisions
+      summary: Get decision comments
+      description: Returns all comments on a decision.
+      operationId: getDecisionComments
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+      responses:
+        '200':
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Decisions
+      summary: Add comment
+      description: Adds a comment to a decision.
+      operationId: addDecisionComment
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+      responses:
+        '201':
+          description: Comment added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/decisions/{id}/comments/{commentId}:
+    put:
+      tags:
+        - Decisions
+      summary: Update comment
+      description: Updates an existing comment.
+      operationId: updateDecisionComment
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+        - $ref: '#/components/parameters/CommentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCommentRequest'
+      responses:
+        '200':
+          description: Comment updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Decisions
+      summary: Delete comment
+      description: Deletes a comment.
+      operationId: deleteDecisionComment
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+        - $ref: '#/components/parameters/CommentId'
+      responses:
+        '204':
+          description: Comment deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/decisions/{id}/votes:
+    get:
+      tags:
+        - Decisions
+      summary: Get decision votes
+      description: Returns all votes on a decision.
+      operationId: getDecisionVotes
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+      responses:
+        '200':
+          description: List of votes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VoteResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Decisions
+      summary: Cast vote
+      description: Casts a vote on a decision.
+      operationId: castVote
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CastVoteRequest'
+      responses:
+        '201':
+          description: Vote cast
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Decisions
+      summary: Remove vote
+      description: Removes the current user's vote from a decision.
+      operationId: removeVote
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+      responses:
+        '204':
+          description: Vote removed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/decisions/{id}/votes/summary:
+    get:
+      tags:
+        - Decisions
+      summary: Get vote summary
+      description: Returns aggregated vote counts for a decision.
+      operationId: getVoteSummary
+      parameters:
+        - $ref: '#/components/parameters/DecisionId'
+      responses:
+        '200':
+          description: Vote summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoteSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/decisions/stats:
+    get:
+      tags:
+        - Decisions
+      summary: Get decision status counts
+      description: Returns count of decisions grouped by status.
+      operationId: getDecisionStatusCounts
+      responses:
+        '200':
+          description: Status counts
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                  format: int64
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/decisions/metrics/avg-time:
+    get:
+      tags:
+        - Decisions
+      summary: Get average decision time
+      description: Returns average time to resolve decisions in hours.
+      operationId: getAverageDecisionTime
+      parameters:
+        - name: days
+          in: query
+          description: Number of days to analyze
+          schema:
+            type: integer
+            default: 30
+      responses:
+        '200':
+          description: Average decision time in hours
+          content:
+            application/json:
+              schema:
+                type: number
+                format: double
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ============================================
+  # HYPOTHESIS ENDPOINTS
+  # ============================================
+  /api/v1/hypotheses:
+    get:
+      tags:
+        - Hypotheses
+      summary: List hypotheses
+      description: Returns hypotheses with optional filtering.
+      operationId: getHypotheses
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/HypothesisStatus'
+        - name: outcomeId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: priority
+          in: query
+          schema:
+            $ref: '#/components/schemas/HypothesisPriority'
+      responses:
+        '200':
+          description: List of hypotheses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HypothesisResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+        - Hypotheses
+      summary: Create hypothesis
+      description: Creates a new hypothesis linked to an outcome.
+      operationId: createHypothesis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHypothesisRequest'
+      responses:
+        '201':
+          description: Hypothesis created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HypothesisResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/hypotheses/paged:
+    get:
+      tags:
+        - Hypotheses
+      summary: List hypotheses (paginated)
+      description: Returns hypotheses with pagination.
+      operationId: getHypothesesPaged
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/HypothesisStatus'
+        - name: priority
+          in: query
+          schema:
+            $ref: '#/components/schemas/HypothesisPriority'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Paginated list of hypotheses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedHypothesisResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/hypotheses/{id}:
+    get:
+      tags:
+        - Hypotheses
+      summary: Get hypothesis by ID
+      description: Returns a single hypothesis by its UUID.
+      operationId: getHypothesis
+      parameters:
+        - $ref: '#/components/parameters/HypothesisId'
+      responses:
+        '200':
+          description: Hypothesis details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HypothesisResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Hypotheses
+      summary: Update hypothesis
+      description: Updates an existing hypothesis.
+      operationId: updateHypothesis
+      parameters:
+        - $ref: '#/components/parameters/HypothesisId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateHypothesisRequest'
+      responses:
+        '200':
+          description: Hypothesis updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HypothesisResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Hypotheses
+      summary: Delete hypothesis
+      description: Deletes a hypothesis.
+      operationId: deleteHypothesis
+      parameters:
+        - $ref: '#/components/parameters/HypothesisId'
+      responses:
+        '204':
+          description: Hypothesis deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/hypotheses/my-hypotheses:
+    get:
+      tags:
+        - Hypotheses
+      summary: Get current user's hypotheses
+      description: Returns hypotheses owned by the current user.
+      operationId: getMyHypotheses
+      responses:
+        '200':
+          description: List of user's hypotheses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HypothesisResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/hypotheses/outcome/{outcomeId}:
+    get:
+      tags:
+        - Hypotheses
+      summary: Get hypotheses for outcome
+      description: Returns all hypotheses linked to an outcome.
+      operationId: getOutcomeHypotheses
+      parameters:
+        - $ref: '#/components/parameters/OutcomeId'
+      responses:
+        '200':
+          description: List of hypotheses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HypothesisResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/hypotheses/blocked:
+    get:
+      tags:
+        - Hypotheses
+      summary: Get blocked hypotheses
+      description: Returns hypotheses in BLOCKED status.
+      operationId: getBlockedHypotheses
+      responses:
+        '200':
+          description: List of blocked hypotheses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HypothesisResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/hypotheses/active:
+    get:
+      tags:
+        - Hypotheses
+      summary: Get active hypotheses
+      description: Returns hypotheses actively being worked on.
+      operationId: getActiveHypotheses
+      responses:
+        '200':
+          description: List of active hypotheses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HypothesisResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/hypotheses/{id}/transition:
+    post:
+      tags:
+        - Hypotheses
+      summary: Transition hypothesis status
+      description: Transitions a hypothesis to a new status.
+      operationId: transitionHypothesis
+      parameters:
+        - $ref: '#/components/parameters/HypothesisId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransitionHypothesisRequest'
+      responses:
+        '200':
+          description: Hypothesis transitioned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HypothesisResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/hypotheses/{id}/conclude:
+    post:
+      tags:
+        - Hypotheses
+      summary: Conclude hypothesis
+      description: Concludes a hypothesis as validated or invalidated.
+      operationId: concludeHypothesis
+      parameters:
+        - $ref: '#/components/parameters/HypothesisId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConcludeHypothesisRequest'
+      responses:
+        '200':
+          description: Hypothesis concluded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HypothesisResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/hypotheses/{id}/abandon:
+    post:
+      tags:
+        - Hypotheses
+      summary: Abandon hypothesis
+      description: Abandons a hypothesis with a reason.
+      operationId: abandonHypothesis
+      parameters:
+        - $ref: '#/components/parameters/HypothesisId'
+        - name: reason
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Hypothesis abandoned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HypothesisResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/hypotheses/stats:
+    get:
+      tags:
+        - Hypotheses
+      summary: Get hypothesis status counts
+      description: Returns count of hypotheses grouped by status.
+      operationId: getHypothesisStatusCounts
+      responses:
+        '200':
+          description: Status counts
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                  format: int64
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/hypotheses/outcome/{outcomeId}/stats:
+    get:
+      tags:
+        - Hypotheses
+      summary: Get hypothesis stats for outcome
+      description: Returns hypothesis counts by status for a specific outcome.
+      operationId: getOutcomeHypothesisStatusCounts
+      parameters:
+        - $ref: '#/components/parameters/OutcomeId'
+      responses:
+        '200':
+          description: Status counts
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                  format: int64
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ============================================
+  # STAKEHOLDER ENDPOINTS
+  # ============================================
+  /api/v1/stakeholders:
+    get:
+      tags:
+        - Stakeholders
+      summary: List stakeholders
+      description: Returns stakeholders with optional filtering.
+      operationId: getStakeholders
+      parameters:
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/StakeholderType'
+        - name: activeOnly
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: List of stakeholders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StakeholderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+        - Stakeholders
+      summary: Create stakeholder
+      description: Creates a new stakeholder.
+      operationId: createStakeholder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStakeholderRequest'
+      responses:
+        '201':
+          description: Stakeholder created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StakeholderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/stakeholders/{id}:
+    get:
+      tags:
+        - Stakeholders
+      summary: Get stakeholder by ID
+      description: Returns a single stakeholder by their UUID.
+      operationId: getStakeholder
+      parameters:
+        - $ref: '#/components/parameters/StakeholderId'
+      responses:
+        '200':
+          description: Stakeholder details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StakeholderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Stakeholders
+      summary: Update stakeholder
+      description: Updates an existing stakeholder.
+      operationId: updateStakeholder
+      parameters:
+        - $ref: '#/components/parameters/StakeholderId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStakeholderRequest'
+      responses:
+        '200':
+          description: Stakeholder updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StakeholderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Stakeholders
+      summary: Delete stakeholder
+      description: Deletes a stakeholder.
+      operationId: deleteStakeholder
+      parameters:
+        - $ref: '#/components/parameters/StakeholderId'
+      responses:
+        '204':
+          description: Stakeholder deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/stakeholders/email/{email}:
+    get:
+      tags:
+        - Stakeholders
+      summary: Get stakeholder by email
+      description: Returns a stakeholder by their email address.
+      operationId: getStakeholderByEmail
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: Stakeholder details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StakeholderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/stakeholders/with-pending:
+    get:
+      tags:
+        - Stakeholders
+      summary: Get stakeholders with pending decisions
+      description: Returns stakeholders who have pending decisions awaiting input.
+      operationId: getStakeholdersWithPending
+      responses:
+        '200':
+          description: List of stakeholders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StakeholderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/stakeholders/slow-responders:
+    get:
+      tags:
+        - Stakeholders
+      summary: Get slow responders
+      description: Returns stakeholders with above-threshold average response times.
+      operationId: getSlowResponders
+      parameters:
+        - name: thresholdHours
+          in: query
+          schema:
+            type: number
+            format: double
+            default: 24
+      responses:
+        '200':
+          description: List of slow responders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StakeholderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/stakeholders/search/expertise:
+    get:
+      tags:
+        - Stakeholders
+      summary: Find by expertise
+      description: Finds stakeholders with matching expertise.
+      operationId: findByExpertise
+      parameters:
+        - name: expertise
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of stakeholders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StakeholderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/stakeholders/{id}/metrics:
+    get:
+      tags:
+        - Stakeholders
+      summary: Get stakeholder metrics
+      description: Returns engagement metrics for a stakeholder.
+      operationId: getStakeholderMetrics
+      parameters:
+        - $ref: '#/components/parameters/StakeholderId'
+      responses:
+        '200':
+          description: Stakeholder metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StakeholderMetrics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/stakeholders/{id}/stats:
+    get:
+      tags:
+        - Stakeholders
+      summary: Get stakeholder stats
+      description: Returns statistics for a stakeholder (alias for metrics).
+      operationId: getStakeholderStats
+      parameters:
+        - $ref: '#/components/parameters/StakeholderId'
+      responses:
+        '200':
+          description: Stakeholder statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StakeholderMetrics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/stakeholders/{id}/responses:
+    get:
+      tags:
+        - Stakeholders
+      summary: Get stakeholder responses
+      description: Returns paginated decision responses for a stakeholder.
+      operationId: getStakeholderResponses
+      parameters:
+        - $ref: '#/components/parameters/StakeholderId'
+        - name: page
+          in: query
+          description: Page number (0-indexed)
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          description: Page size
+          schema:
+            type: integer
+            default: 20
+        - name: pending
+          in: query
+          description: Filter by pending status
+          schema:
+            type: boolean
+        - name: withinSla
+          in: query
+          description: Filter by SLA compliance
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Paginated list of decision responses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedDecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/stakeholders/leaderboard:
+    get:
+      tags:
+        - Stakeholders
+      summary: Get stakeholder leaderboard
+      description: Returns stakeholder rankings by engagement metrics.
+      operationId: getStakeholderLeaderboard
+      responses:
+        '200':
+          description: Stakeholder leaderboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StakeholderLeaderboard'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/stakeholders/me/responses/pending:
+    get:
+      tags:
+        - Stakeholders
+      summary: Get my pending responses
+      description: Returns decisions awaiting response from the current stakeholder.
+      operationId: getMyPendingResponses
+      responses:
+        '200':
+          description: List of pending decisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================
+  # QUEUE ENDPOINTS
+  # ============================================
+  /api/v1/queues:
+    get:
+      tags:
+        - Queues
+      summary: List queues
+      description: Returns all decision queues.
+      operationId: getQueues
+      responses:
+        '200':
+          description: List of queues
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QueueResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+        - Queues
+      summary: Create queue
+      description: Creates a new decision queue.
+      operationId: createQueue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateQueueRequest'
+      responses:
+        '201':
+          description: Queue created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/queues/{id}:
+    get:
+      tags:
+        - Queues
+      summary: Get queue by ID
+      description: Returns a single queue by its UUID.
+      operationId: getQueueById
+      parameters:
+        - $ref: '#/components/parameters/QueueId'
+      responses:
+        '200':
+          description: Queue details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Queues
+      summary: Update queue
+      description: Updates an existing queue.
+      operationId: updateQueue
+      parameters:
+        - $ref: '#/components/parameters/QueueId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateQueueRequest'
+      responses:
+        '200':
+          description: Queue updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Queues
+      summary: Delete queue
+      description: Deletes a queue.
+      operationId: deleteQueue
+      parameters:
+        - $ref: '#/components/parameters/QueueId'
+      responses:
+        '204':
+          description: Queue deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/queues/default:
+    get:
+      tags:
+        - Queues
+      summary: Get default queue
+      description: Returns the default decision queue for the tenant.
+      operationId: getDefaultQueue
+      responses:
+        '200':
+          description: Default queue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/queues/{id}/set-default:
+    post:
+      tags:
+        - Queues
+      summary: Set default queue
+      description: Sets a queue as the default for the tenant.
+      operationId: setDefaultQueue
+      parameters:
+        - $ref: '#/components/parameters/QueueId'
+      responses:
+        '200':
+          description: Queue set as default
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ============================================
+  # AUDIT ENDPOINTS
+  # ============================================
+  /api/v1/audit:
+    get:
+      tags:
+        - Audit
+      summary: List audit logs
+      description: Returns audit logs with optional filtering.
+      operationId: getAuditLogs
+      parameters:
+        - name: actorId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: entityType
+          in: query
+          schema:
+            type: string
+        - name: entityId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: action
+          in: query
+          schema:
+            $ref: '#/components/schemas/AuditAction'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+        - name: sort
+          in: query
+          schema:
+            type: string
+            default: timestamp,desc
+      responses:
+        '200':
+          description: Paginated audit logs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedAuditLog'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/audit/entity/{entityType}/{entityId}:
+    get:
+      tags:
+        - Audit
+      summary: Get entity history
+      description: Returns audit history for a specific entity.
+      operationId: getEntityHistory
+      parameters:
+        - name: entityType
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: entityId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+        - name: sort
+          in: query
+          schema:
+            type: string
+            default: timestamp,desc
+      responses:
+        '200':
+          description: Entity audit history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedAuditLog'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/audit/stats:
+    get:
+      tags:
+        - Audit
+      summary: Get action statistics
+      description: Returns counts of audit actions over a time period.
+      operationId: getActionStats
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+      responses:
+        '200':
+          description: Action statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                  format: int64
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token obtained from /api/v1/auth/login
+
+  parameters:
+    UserId:
+      name: id
+      in: path
+      description: User UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    TeamId:
+      name: id
+      in: path
+      description: Team UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    OutcomeId:
+      name: outcomeId
+      in: path
+      description: Outcome UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    KeyResultId:
+      name: id
+      in: path
+      description: Key Result UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    DecisionId:
+      name: id
+      in: path
+      description: Decision UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    HypothesisId:
+      name: id
+      in: path
+      description: Hypothesis UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    StakeholderId:
+      name: id
+      in: path
+      description: Stakeholder UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    QueueId:
+      name: id
+      in: path
+      description: Queue UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    CommentId:
+      name: commentId
+      in: path
+      description: Comment UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    PageNumber:
+      name: page
+      in: query
+      description: Page number (0-based)
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+
+    PageSize:
+      name: size
+      in: query
+      description: Page size
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+
+    SortBy:
+      name: sortBy
+      in: query
+      description: Field to sort by
+      schema:
+        type: string
+        default: createdAt
+
+    SortDir:
+      name: sortDir
+      in: query
+      description: Sort direction
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: desc
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Conflict:
+      description: State conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    # ============================================
+    # AUTHENTICATION SCHEMAS
+    # ============================================
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: password123
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - firstName
+        - lastName
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+        firstName:
+          type: string
+          maxLength: 100
+        lastName:
+          type: string
+          maxLength: 100
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        tokenType:
+          type: string
+          example: Bearer
+        expiresIn:
+          type: integer
+          description: Token expiration in seconds
+        user:
+          $ref: '#/components/schemas/UserInfo'
+
+    UserInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        tenantId:
+          type: string
+          format: uuid
+        roles:
+          type: array
+          items:
+            type: string
+        permissions:
+          type: array
+          items:
+            type: string
+
+    # ============================================
+    # USER SCHEMAS
+    # ============================================
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        fullName:
+          type: string
+        title:
+          type: string
+        department:
+          type: string
+        avatarUrl:
+          type: string
+          format: uri
+        role:
+          $ref: '#/components/schemas/RoleResponse'
+        manager:
+          $ref: '#/components/schemas/UserSummary'
+        active:
+          type: boolean
+        lastLoginAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        fullName:
+          type: string
+        avatarUrl:
+          type: string
+          format: uri
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          maxLength: 100
+        lastName:
+          type: string
+          maxLength: 100
+        title:
+          type: string
+          maxLength: 200
+        department:
+          type: string
+          maxLength: 200
+        avatarUrl:
+          type: string
+          format: uri
+        managerId:
+          type: string
+          format: uuid
+
+    # ============================================
+    # ROLE SCHEMAS
+    # ============================================
+    RoleResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          $ref: '#/components/schemas/RoleCategory'
+        level:
+          $ref: '#/components/schemas/RoleLevel'
+        systemRole:
+          type: boolean
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Permission'
+
+    CreateRoleRequest:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+          maxLength: 50
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+        permissionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    Permission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+
+    RoleCategory:
+      type: string
+      enum:
+        - SYSTEM
+        - EXECUTIVE
+        - PRODUCT
+        - ENGINEERING
+        - UX
+        - QA
+        - DATA
+        - BUSINESS
+        - STAKEHOLDER
+        - CUSTOM
+
+    RoleLevel:
+      type: string
+      enum:
+        - L1_INDIVIDUAL
+        - L2_SENIOR
+        - L3_LEAD
+        - L4_MANAGER
+        - L5_SENIOR_MANAGER
+        - L6_VP
+        - L7_SVP
+        - L8_CXXX
+        - L9_OWNER
+
+    # ============================================
+    # TEAM SCHEMAS
+    # ============================================
+    TeamResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        iconUrl:
+          type: string
+          format: uri
+        color:
+          type: string
+        lead:
+          $ref: '#/components/schemas/UserSummary'
+        memberCount:
+          type: integer
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TeamDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/TeamResponse'
+        - type: object
+          properties:
+            members:
+              type: array
+              items:
+                $ref: '#/components/schemas/TeamMemberResponse'
+
+    TeamSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+
+    CreateTeamRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+        iconUrl:
+          type: string
+          format: uri
+        color:
+          type: string
+          maxLength: 20
+        leadId:
+          type: string
+          format: uuid
+
+    UpdateTeamRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+        iconUrl:
+          type: string
+          format: uri
+        color:
+          type: string
+          maxLength: 20
+        leadId:
+          type: string
+          format: uuid
+
+    TeamMemberResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        user:
+          $ref: '#/components/schemas/UserSummary'
+        role:
+          $ref: '#/components/schemas/TeamMemberRole'
+        joinedAt:
+          type: string
+          format: date-time
+
+    AddTeamMemberRequest:
+      type: object
+      required:
+        - userId
+        - role
+      properties:
+        userId:
+          type: string
+          format: uuid
+        role:
+          $ref: '#/components/schemas/TeamMemberRole'
+
+    UpdateTeamMemberRequest:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          $ref: '#/components/schemas/TeamMemberRole'
+
+    TeamMemberRole:
+      type: string
+      enum:
+        - LEAD
+        - MEMBER
+        - OBSERVER
+
+    PagedTeamResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamResponse'
+        pageable:
+          $ref: '#/components/schemas/Pageable'
+        totalPages:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        last:
+          type: boolean
+        first:
+          type: boolean
+        size:
+          type: integer
+        number:
+          type: integer
+        numberOfElements:
+          type: integer
+        empty:
+          type: boolean
+
+    # ============================================
+    # OUTCOME SCHEMAS
+    # ============================================
+    OutcomeResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        successCriteria:
+          type: string
+        targetMetrics:
+          type: object
+          additionalProperties: true
+        currentMetrics:
+          type: object
+          additionalProperties: true
+        status:
+          $ref: '#/components/schemas/OutcomeStatus'
+        priority:
+          $ref: '#/components/schemas/OutcomePriority'
+        team:
+          $ref: '#/components/schemas/TeamSummary'
+        owner:
+          $ref: '#/components/schemas/UserSummary'
+        targetDate:
+          type: string
+          format: date
+        startedAt:
+          type: string
+          format: date-time
+        validatedAt:
+          type: string
+          format: date-time
+        validatedBy:
+          $ref: '#/components/schemas/UserSummary'
+        validationNotes:
+          type: string
+        externalRefs:
+          type: object
+          additionalProperties:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        hypothesisCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    OutcomeSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/OutcomeStatus'
+
+    CreateOutcomeRequest:
+      type: object
+      required:
+        - title
+        - successCriteria
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 500
+        description:
+          type: string
+          maxLength: 5000
+        successCriteria:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        targetMetrics:
+          type: object
+          additionalProperties: true
+        priority:
+          $ref: '#/components/schemas/OutcomePriority'
+        teamId:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        targetDate:
+          type: string
+          format: date
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 20
+
+    UpdateOutcomeRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 500
+        description:
+          type: string
+          maxLength: 5000
+        successCriteria:
+          type: string
+          maxLength: 2000
+        targetMetrics:
+          type: object
+          additionalProperties: true
+        priority:
+          $ref: '#/components/schemas/OutcomePriority'
+        teamId:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        targetDate:
+          type: string
+          format: date
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 20
+
+    ValidateOutcomeRequest:
+      type: object
+      properties:
+        validationNotes:
+          type: string
+          maxLength: 2000
+
+    InvalidateOutcomeRequest:
+      type: object
+      properties:
+        invalidationNotes:
+          type: string
+          maxLength: 2000
+
+    OutcomeStatus:
+      type: string
+      enum:
+        - DRAFT
+        - NOT_STARTED
+        - IN_PROGRESS
+        - VALIDATING
+        - VALIDATED
+        - INVALIDATED
+        - ABANDONED
+
+    OutcomePriority:
+      type: string
+      enum:
+        - CRITICAL
+        - HIGH
+        - MEDIUM
+        - LOW
+        - BACKLOG
+
+    PagedOutcomeResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutcomeResponse'
+        pageable:
+          $ref: '#/components/schemas/Pageable'
+        totalPages:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        last:
+          type: boolean
+        first:
+          type: boolean
+        size:
+          type: integer
+        number:
+          type: integer
+        numberOfElements:
+          type: integer
+        empty:
+          type: boolean
+
+    # ============================================
+    # KEY RESULT SCHEMAS
+    # ============================================
+    KeyResultResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        outcomeId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        targetValue:
+          type: number
+        currentValue:
+          type: number
+        unit:
+          type: string
+        progressPercent:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateKeyResultRequest:
+      type: object
+      required:
+        - title
+        - targetValue
+        - unit
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 1000
+        targetValue:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+        currentValue:
+          type: number
+        unit:
+          type: string
+          maxLength: 50
+
+    UpdateKeyResultRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 1000
+        targetValue:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+        unit:
+          type: string
+          maxLength: 50
+
+    # ============================================
+    # DECISION SCHEMAS
+    # ============================================
+    DecisionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        context:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/DecisionOption'
+        status:
+          $ref: '#/components/schemas/DecisionStatus'
+        priority:
+          $ref: '#/components/schemas/DecisionPriority'
+        type:
+          $ref: '#/components/schemas/DecisionType'
+        owner:
+          $ref: '#/components/schemas/UserSummary'
+        assignedTo:
+          $ref: '#/components/schemas/UserSummary'
+        outcome:
+          $ref: '#/components/schemas/OutcomeSummary'
+        hypothesis:
+          $ref: '#/components/schemas/HypothesisSummary'
+        team:
+          $ref: '#/components/schemas/TeamSummary'
+        queue:
+          $ref: '#/components/schemas/QueueSummary'
+        stakeholder:
+          $ref: '#/components/schemas/StakeholderSummary'
+        slaHours:
+          type: integer
+        dueAt:
+          type: string
+          format: date-time
+        overdue:
+          type: boolean
+        waitTimeHours:
+          type: number
+        escalationLevel:
+          type: integer
+        escalatedAt:
+          type: string
+          format: date-time
+        escalatedTo:
+          $ref: '#/components/schemas/UserSummary'
+        decidedBy:
+          $ref: '#/components/schemas/UserSummary'
+        decidedAt:
+          type: string
+          format: date-time
+        decisionRationale:
+          type: string
+        selectedOption:
+          $ref: '#/components/schemas/DecisionOption'
+        resolution:
+          type: string
+        wasEscalated:
+          type: boolean
+        blockedItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlockedItem'
+        commentCount:
+          type: integer
+        voteCount:
+          type: integer
+        externalRefs:
+          type: object
+          additionalProperties:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    DecisionOption:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        pros:
+          type: array
+          items:
+            type: string
+        cons:
+          type: array
+          items:
+            type: string
+
+    BlockedItem:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        title:
+          type: string
+        url:
+          type: string
+
+    CreateDecisionRequest:
+      type: object
+      required:
+        - title
+        - priority
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 500
+        description:
+          type: string
+          maxLength: 5000
+        context:
+          type: string
+          maxLength: 5000
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/DecisionOption'
+        priority:
+          $ref: '#/components/schemas/DecisionPriority'
+        decisionType:
+          $ref: '#/components/schemas/DecisionType'
+        ownerId:
+          type: string
+          format: uuid
+        assignedToId:
+          type: string
+          format: uuid
+        outcomeId:
+          type: string
+          format: uuid
+        hypothesisId:
+          type: string
+          format: uuid
+        teamId:
+          type: string
+          format: uuid
+        queueId:
+          type: string
+          format: uuid
+        stakeholderId:
+          type: string
+          format: uuid
+        slaHours:
+          type: integer
+          minimum: 1
+          maximum: 720
+        blockedItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlockedItem'
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 20
+
+    UpdateDecisionRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 500
+        description:
+          type: string
+          maxLength: 5000
+        context:
+          type: string
+          maxLength: 5000
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/DecisionOption'
+        priority:
+          $ref: '#/components/schemas/DecisionPriority'
+        decisionType:
+          $ref: '#/components/schemas/DecisionType'
+        assignedToId:
+          type: string
+          format: uuid
+        slaHours:
+          type: integer
+          minimum: 1
+          maximum: 720
+        blockedItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlockedItem'
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 20
+
+    ResolveDecisionRequest:
+      type: object
+      properties:
+        selectedOption:
+          $ref: '#/components/schemas/DecisionOption'
+        decisionRationale:
+          type: string
+          maxLength: 5000
+
+    EscalateDecisionRequest:
+      type: object
+      required:
+        - escalatedToId
+      properties:
+        escalatedToId:
+          type: string
+          format: uuid
+        escalationReason:
+          type: string
+          maxLength: 1000
+
+    DecisionStatus:
+      type: string
+      enum:
+        - NEEDS_INPUT
+        - UNDER_DISCUSSION
+        - DECIDED
+        - IMPLEMENTED
+        - DEFERRED
+        - CANCELLED
+
+    DecisionPriority:
+      type: string
+      enum:
+        - BLOCKING
+        - HIGH
+        - NORMAL
+        - LOW
+      description: |
+        Priority levels with default SLA hours:
+        - BLOCKING: 4 hours
+        - HIGH: 8 hours
+        - NORMAL: 24 hours
+        - LOW: 72 hours
+
+    DecisionType:
+      type: string
+      enum:
+        - PRODUCT
+        - UX
+        - TECHNICAL
+        - ARCHITECTURAL
+        - STRATEGIC
+        - OPERATIONAL
+        - RESOURCE
+        - SCOPE
+        - TIMELINE
+
+    DecisionQueueResponse:
+      type: object
+      properties:
+        blocking:
+          type: array
+          items:
+            $ref: '#/components/schemas/DecisionResponse'
+        high:
+          type: array
+          items:
+            $ref: '#/components/schemas/DecisionResponse'
+        normal:
+          type: array
+          items:
+            $ref: '#/components/schemas/DecisionResponse'
+        low:
+          type: array
+          items:
+            $ref: '#/components/schemas/DecisionResponse'
+        overdue:
+          type: array
+          items:
+            $ref: '#/components/schemas/DecisionResponse'
+        totalCount:
+          type: integer
+
+    PagedDecisionResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/DecisionResponse'
+        pageable:
+          $ref: '#/components/schemas/Pageable'
+        totalPages:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        last:
+          type: boolean
+        first:
+          type: boolean
+        size:
+          type: integer
+        number:
+          type: integer
+        numberOfElements:
+          type: integer
+        empty:
+          type: boolean
+
+    # ============================================
+    # COMMENT & VOTE SCHEMAS
+    # ============================================
+    CommentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        text:
+          type: string
+        author:
+          $ref: '#/components/schemas/UserSummary'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateCommentRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 5000
+
+    UpdateCommentRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 5000
+
+    VoteResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        voter:
+          $ref: '#/components/schemas/UserSummary'
+        vote:
+          $ref: '#/components/schemas/VoteType'
+        comment:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CastVoteRequest:
+      type: object
+      required:
+        - vote
+      properties:
+        vote:
+          $ref: '#/components/schemas/VoteType'
+        comment:
+          type: string
+          maxLength: 1000
+
+    VoteSummary:
+      type: object
+      properties:
+        approve:
+          type: integer
+        reject:
+          type: integer
+        abstain:
+          type: integer
+        needsMoreInfo:
+          type: integer
+        totalVotes:
+          type: integer
+
+    VoteType:
+      type: string
+      enum:
+        - APPROVE
+        - REJECT
+        - ABSTAIN
+        - NEEDS_MORE_INFO
+
+    # ============================================
+    # HYPOTHESIS SCHEMAS
+    # ============================================
+    HypothesisResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        outcome:
+          $ref: '#/components/schemas/OutcomeSummary'
+        title:
+          type: string
+        belief:
+          type: string
+        expectedResult:
+          type: string
+        measurementCriteria:
+          type: string
+        status:
+          $ref: '#/components/schemas/HypothesisStatus'
+        priority:
+          $ref: '#/components/schemas/HypothesisPriority'
+        effort:
+          $ref: '#/components/schemas/TShirtSize'
+        impact:
+          $ref: '#/components/schemas/TShirtSize'
+        confidence:
+          $ref: '#/components/schemas/ConfidenceLevel'
+        owner:
+          $ref: '#/components/schemas/UserSummary'
+        experimentConfig:
+          type: object
+          additionalProperties: true
+        experimentResults:
+          type: object
+          additionalProperties: true
+        blockedReason:
+          type: string
+        conclusionNotes:
+          type: string
+        externalRefs:
+          type: object
+          additionalProperties:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        startedAt:
+          type: string
+          format: date-time
+        deployedAt:
+          type: string
+          format: date-time
+        measuringStartedAt:
+          type: string
+          format: date-time
+        concludedAt:
+          type: string
+          format: date-time
+        concludedBy:
+          $ref: '#/components/schemas/UserSummary'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    HypothesisSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/HypothesisStatus'
+
+    CreateHypothesisRequest:
+      type: object
+      required:
+        - outcomeId
+        - title
+        - belief
+        - expectedResult
+      properties:
+        outcomeId:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 500
+        belief:
+          type: string
+          maxLength: 2000
+        expectedResult:
+          type: string
+          maxLength: 2000
+        measurementCriteria:
+          type: string
+          maxLength: 2000
+        priority:
+          $ref: '#/components/schemas/HypothesisPriority'
+        effort:
+          $ref: '#/components/schemas/TShirtSize'
+        impact:
+          $ref: '#/components/schemas/TShirtSize'
+        confidence:
+          $ref: '#/components/schemas/ConfidenceLevel'
+        ownerId:
+          type: string
+          format: uuid
+        experimentConfig:
+          type: object
+          additionalProperties: true
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 20
+
+    UpdateHypothesisRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 500
+        belief:
+          type: string
+          maxLength: 2000
+        expectedResult:
+          type: string
+          maxLength: 2000
+        measurementCriteria:
+          type: string
+          maxLength: 2000
+        priority:
+          $ref: '#/components/schemas/HypothesisPriority'
+        effort:
+          $ref: '#/components/schemas/TShirtSize'
+        impact:
+          $ref: '#/components/schemas/TShirtSize'
+        confidence:
+          $ref: '#/components/schemas/ConfidenceLevel'
+        ownerId:
+          type: string
+          format: uuid
+        experimentConfig:
+          type: object
+          additionalProperties: true
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 20
+
+    TransitionHypothesisRequest:
+      type: object
+      required:
+        - newStatus
+      properties:
+        newStatus:
+          $ref: '#/components/schemas/HypothesisStatus'
+
+    ConcludeHypothesisRequest:
+      type: object
+      required:
+        - conclusionStatus
+      properties:
+        conclusionStatus:
+          type: string
+          enum:
+            - VALIDATED
+            - INVALIDATED
+        conclusionNotes:
+          type: string
+          maxLength: 5000
+        experimentResults:
+          type: object
+          additionalProperties: true
+
+    HypothesisStatus:
+      type: string
+      enum:
+        - DRAFT
+        - READY
+        - BLOCKED
+        - BUILDING
+        - DEPLOYED
+        - MEASURING
+        - VALIDATED
+        - INVALIDATED
+        - ABANDONED
+
+    HypothesisPriority:
+      type: string
+      enum:
+        - CRITICAL
+        - HIGH
+        - MEDIUM
+        - LOW
+
+    TShirtSize:
+      type: string
+      enum:
+        - XS
+        - S
+        - M
+        - L
+        - XL
+      description: |
+        Effort/impact estimation:
+        - XS: Hours
+        - S: 1-2 days
+        - M: 3-5 days
+        - L: 1-2 weeks
+        - XL: 2+ weeks
+
+    ConfidenceLevel:
+      type: string
+      enum:
+        - LOW
+        - MEDIUM
+        - HIGH
+      description: |
+        Confidence in hypothesis:
+        - LOW: <40%
+        - MEDIUM: 40-70%
+        - HIGH: >70%
+
+    PagedHypothesisResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/HypothesisResponse'
+        pageable:
+          $ref: '#/components/schemas/Pageable'
+        totalPages:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        last:
+          type: boolean
+        first:
+          type: boolean
+        size:
+          type: integer
+        number:
+          type: integer
+        numberOfElements:
+          type: integer
+        empty:
+          type: boolean
+
+    # ============================================
+    # STAKEHOLDER SCHEMAS
+    # ============================================
+    StakeholderResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        title:
+          type: string
+        organization:
+          type: string
+        phone:
+          type: string
+        avatarUrl:
+          type: string
+          format: uri
+        type:
+          $ref: '#/components/schemas/StakeholderType'
+        expertise:
+          type: string
+        preferredContactMethod:
+          type: string
+        availabilityNotes:
+          type: string
+        timezone:
+          type: string
+        decisionsPending:
+          type: integer
+        decisionsCompleted:
+          type: integer
+        decisionsEscalated:
+          type: integer
+        avgResponseTimeHours:
+          type: number
+        lastDecisionAt:
+          type: string
+          format: date-time
+        active:
+          type: boolean
+        notes:
+          type: string
+        externalRefs:
+          type: object
+          additionalProperties:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    StakeholderSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        type:
+          $ref: '#/components/schemas/StakeholderType'
+
+    CreateStakeholderRequest:
+      type: object
+      required:
+        - name
+        - email
+        - type
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        email:
+          type: string
+          format: email
+        type:
+          $ref: '#/components/schemas/StakeholderType'
+        title:
+          type: string
+          maxLength: 200
+        organization:
+          type: string
+          maxLength: 200
+        phone:
+          type: string
+          maxLength: 50
+        expertise:
+          type: string
+          maxLength: 500
+        preferredContactMethod:
+          type: string
+          maxLength: 100
+        timezone:
+          type: string
+          maxLength: 50
+        notes:
+          type: string
+          maxLength: 2000
+
+    UpdateStakeholderRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        email:
+          type: string
+          format: email
+        type:
+          $ref: '#/components/schemas/StakeholderType'
+        title:
+          type: string
+          maxLength: 200
+        organization:
+          type: string
+          maxLength: 200
+        phone:
+          type: string
+          maxLength: 50
+        expertise:
+          type: string
+          maxLength: 500
+        preferredContactMethod:
+          type: string
+          maxLength: 100
+        timezone:
+          type: string
+          maxLength: 50
+        notes:
+          type: string
+          maxLength: 2000
+        active:
+          type: boolean
+
+    StakeholderType:
+      type: string
+      enum:
+        - INTERNAL
+        - EXTERNAL
+        - EXECUTIVE
+        - CUSTOMER
+        - REGULATORY
+        - TECHNICAL
+
+    StakeholderMetrics:
+      type: object
+      properties:
+        stakeholderId:
+          type: string
+          format: uuid
+        totalDecisions:
+          type: integer
+        pendingDecisions:
+          type: integer
+        completedDecisions:
+          type: integer
+        escalatedDecisions:
+          type: integer
+        avgResponseTimeHours:
+          type: number
+        responseTimeP50Hours:
+          type: number
+        responseTimeP90Hours:
+          type: number
+
+    StakeholderLeaderboard:
+      type: object
+      properties:
+        fastestResponders:
+          type: array
+          items:
+            $ref: '#/components/schemas/StakeholderResponse'
+        mostActive:
+          type: array
+          items:
+            $ref: '#/components/schemas/StakeholderResponse'
+        needsAttention:
+          type: array
+          items:
+            $ref: '#/components/schemas/StakeholderResponse'
+
+    # ============================================
+    # QUEUE SCHEMAS
+    # ============================================
+    QueueResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        isDefault:
+          type: boolean
+        decisionCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    QueueSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+
+    CreateQueueRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+
+    UpdateQueueRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+
+    # ============================================
+    # AUDIT SCHEMAS
+    # ============================================
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        actorId:
+          type: string
+          format: uuid
+        actorEmail:
+          type: string
+          format: email
+        action:
+          $ref: '#/components/schemas/AuditAction'
+        entityType:
+          type: string
+        entityId:
+          type: string
+          format: uuid
+        entityName:
+          type: string
+        previousState:
+          type: object
+          additionalProperties: true
+        newState:
+          type: object
+          additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties: true
+        ipAddress:
+          type: string
+        userAgent:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    AuditAction:
+      type: string
+      enum:
+        - CREATE
+        - READ
+        - UPDATE
+        - DELETE
+        - STATUS_CHANGE
+        - DECISION_RESOLVED
+        - DECISION_ESCALATED
+        - DECISION_ASSIGNED
+        - DECISION_COMMENTED
+        - OUTCOME_VALIDATED
+        - OUTCOME_INVALIDATED
+        - HYPOTHESIS_TRANSITIONED
+        - HYPOTHESIS_CONCLUDED
+        - HYPOTHESIS_BLOCKED
+        - HYPOTHESIS_UNBLOCKED
+        - LOGIN
+        - LOGOUT
+        - PASSWORD_CHANGED
+        - USER_CREATED
+        - USER_DEACTIVATED
+        - ROLE_ASSIGNED
+        - TEAM_MEMBER_ADDED
+        - TEAM_MEMBER_REMOVED
+
+    PagedAuditLog:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+        pageable:
+          $ref: '#/components/schemas/Pageable'
+        totalPages:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        last:
+          type: boolean
+        first:
+          type: boolean
+        size:
+          type: integer
+        number:
+          type: integer
+        numberOfElements:
+          type: integer
+        empty:
+          type: boolean
+
+    # ============================================
+    # COMMON SCHEMAS
+    # ============================================
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+          description: Error code
+          enum:
+            - NOT_FOUND
+            - FORBIDDEN
+            - UNAUTHORIZED
+            - BAD_REQUEST
+            - CONFLICT
+            - VALIDATION_ERROR
+            - INTERNAL_ERROR
+        message:
+          type: string
+          description: Human-readable error message
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+          description: Field-level validation errors
+
+    Pageable:
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+        pageSize:
+          type: integer
+        sort:
+          type: array
+          items:
+            type: object
+            properties:
+              property:
+                type: string
+              direction:
+                type: string
+        offset:
+          type: integer
+          format: int64
+        paged:
+          type: boolean
+        unpaged:
+          type: boolean

@@ -72,6 +72,8 @@ public interface DecisionRepository extends JpaRepository<Decision, UUID> {
 
     List<Decision> findByTenantIdAndAssignedToIdAndStatusIn(UUID tenantId, UUID assignedToId, List<DecisionStatus> statuses);
 
+    List<Decision> findByTenantIdAndAssignedToId(UUID tenantId, UUID assignedToId);
+
     List<Decision> findByOutcomeId(UUID outcomeId);
 
     List<Decision> findByHypothesisId(UUID hypothesisId);

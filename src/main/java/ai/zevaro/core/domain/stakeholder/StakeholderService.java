@@ -18,6 +18,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -209,6 +213,47 @@ public class StakeholderService {
         return decisions.stream()
                 .map(d -> decisionMapper.toResponse(d, 0))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<DecisionResponse> getStakeholderResponses(
+            UUID stakeholderId, UUID tenantId, int page, int size, Boolean pending, Boolean withinSla) {
+        Stakeholder stakeholder = stakeholderRepository.findByIdAndTenantId(stakeholderId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Stakeholder", "id", stakeholderId));
+
+        if (stakeholder.getUser() == null) {
+            return new PageImpl<>(List.of(), PageRequest.of(page, size), 0);
+        }
+
+        UUID userId = stakeholder.getUser().getId();
+        List<Decision> decisions;
+
+        if (Boolean.TRUE.equals(pending)) {
+            // Get pending decisions
+            decisions = decisionRepository.findByTenantIdAndAssignedToIdAndStatusIn(
+                    tenantId, userId,
+                    List.of(DecisionStatus.NEEDS_INPUT, DecisionStatus.UNDER_DISCUSSION));
+        } else if (Boolean.FALSE.equals(pending)) {
+            // Get completed decisions
+            decisions = decisionRepository.findByTenantIdAndAssignedToIdAndStatusIn(
+                    tenantId, userId,
+                    List.of(DecisionStatus.DECIDED, DecisionStatus.IMPLEMENTED,
+                            DecisionStatus.DEFERRED, DecisionStatus.CANCELLED));
+        } else {
+            // Get all decisions for this stakeholder
+            decisions = decisionRepository.findByTenantIdAndAssignedToId(tenantId, userId);
+        }
+
+        // Convert to response and paginate
+        List<DecisionResponse> responses = decisions.stream()
+                .map(d -> decisionMapper.toResponse(d, 0))
+                .toList();
+
+        int start = Math.min(page * size, responses.size());
+        int end = Math.min(start + size, responses.size());
+        List<DecisionResponse> pageContent = responses.subList(start, end);
+
+        return new PageImpl<>(pageContent, PageRequest.of(page, size), responses.size());
     }
 
     private void updateAverageResponseTime(UUID stakeholderId, double newResponseTimeHours) {

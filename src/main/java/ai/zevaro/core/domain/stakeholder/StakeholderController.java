@@ -128,4 +128,26 @@ public class StakeholderController {
     public ResponseEntity<List<DecisionResponse>> getMyPendingResponses(@CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(stakeholderService.getMyPendingResponses(user.getUserId(), user.getTenantId()));
     }
+
+    @GetMapping("/{id}/stats")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('analytics:read')")
+    public ResponseEntity<StakeholderMetrics> getStakeholderStats(
+            @PathVariable UUID id,
+            @CurrentUser UserPrincipal user) {
+        // Stats endpoint returns the same data as metrics
+        return ResponseEntity.ok(stakeholderService.getStakeholderMetrics(id, user.getTenantId()));
+    }
+
+    @GetMapping("/{id}/responses")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('stakeholder:read')")
+    public ResponseEntity<org.springframework.data.domain.Page<DecisionResponse>> getStakeholderResponses(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) Boolean pending,
+            @RequestParam(required = false) Boolean withinSla,
+            @CurrentUser UserPrincipal user) {
+        return ResponseEntity.ok(stakeholderService.getStakeholderResponses(
+                id, user.getTenantId(), page, size, pending, withinSla));
+    }
 }
