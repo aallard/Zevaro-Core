@@ -1,5 +1,6 @@
 package ai.zevaro.core.domain.stakeholder;
 
+import ai.zevaro.core.domain.decision.dto.DecisionResponse;
 import ai.zevaro.core.domain.stakeholder.dto.CreateStakeholderRequest;
 import ai.zevaro.core.domain.stakeholder.dto.StakeholderLeaderboard;
 import ai.zevaro.core.domain.stakeholder.dto.StakeholderMetrics;
@@ -120,5 +121,11 @@ public class StakeholderController {
     @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('analytics:read')")
     public ResponseEntity<StakeholderLeaderboard> getLeaderboard(@CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(stakeholderService.getLeaderboard(user.getTenantId()));
+    }
+
+    @GetMapping("/me/responses/pending")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<DecisionResponse>> getMyPendingResponses(@CurrentUser UserPrincipal user) {
+        return ResponseEntity.ok(stakeholderService.getMyPendingResponses(user.getUserId(), user.getTenantId()));
     }
 }

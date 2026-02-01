@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -128,15 +129,24 @@ public class AuthService {
     private AuthResponse buildAuthResponse(User user, String rawRefreshToken) {
         String accessToken = jwtTokenProvider.generateToken(user);
 
+        List<String> roles = List.of(user.getRole().getCode());
+        List<String> permissions = user.getRole().getPermissions().stream()
+                .map(p -> p.getCode())
+                .toList();
+
         return new AuthResponse(
                 accessToken,
                 rawRefreshToken,
-                jwtTokenProvider.getJwtExpiration(),
+                "Bearer",
+                (int) (jwtTokenProvider.getJwtExpiration() / 1000),
                 new AuthResponse.UserInfo(
                         user.getId().toString(),
                         user.getEmail(),
-                        user.getFullName(),
-                        user.getRole().getCode()
+                        user.getFirstName(),
+                        user.getLastName(),
+                        user.getTenantId().toString(),
+                        roles,
+                        permissions
                 )
         );
     }

@@ -162,6 +162,30 @@ public class DecisionService {
     }
 
     @Transactional(readOnly = true)
+    public List<DecisionResponse> getPendingDecisions(UUID tenantId, UUID teamId) {
+        List<Decision> decisions;
+        if (teamId != null) {
+            decisions = decisionRepository.findByTenantIdAndStatusInAndTeamId(
+                    tenantId, List.of(DecisionStatus.NEEDS_INPUT, DecisionStatus.UNDER_DISCUSSION), teamId);
+        } else {
+            decisions = decisionRepository.findByTenantIdAndStatusIn(
+                    tenantId, List.of(DecisionStatus.NEEDS_INPUT, DecisionStatus.UNDER_DISCUSSION));
+        }
+        return decisions.stream()
+                .map(this::toResponseWithCount)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<DecisionResponse> getBlockingDecisions(UUID tenantId) {
+        return decisionRepository.findByTenantIdAndPriorityAndStatusIn(
+                tenantId, DecisionPriority.BLOCKING,
+                List.of(DecisionStatus.NEEDS_INPUT, DecisionStatus.UNDER_DISCUSSION)).stream()
+                .map(this::toResponseWithCount)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<DecisionResponse> getDecisionsForOutcome(UUID outcomeId, UUID tenantId) {
         return decisionRepository.findByOutcomeId(outcomeId).stream()
                 .map(this::toResponseWithCount)

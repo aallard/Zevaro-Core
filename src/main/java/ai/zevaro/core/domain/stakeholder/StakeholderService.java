@@ -3,6 +3,8 @@ package ai.zevaro.core.domain.stakeholder;
 import ai.zevaro.core.domain.decision.Decision;
 import ai.zevaro.core.domain.decision.DecisionMapper;
 import ai.zevaro.core.domain.decision.DecisionRepository;
+import ai.zevaro.core.domain.decision.DecisionStatus;
+import ai.zevaro.core.domain.decision.dto.DecisionResponse;
 import ai.zevaro.core.domain.decision.dto.DecisionSummary;
 import ai.zevaro.core.domain.stakeholder.dto.CreateStakeholderRequest;
 import ai.zevaro.core.domain.stakeholder.dto.StakeholderLeaderboard;
@@ -196,6 +198,17 @@ public class StakeholderService {
     @Transactional
     public void onDecisionEscalated(UUID stakeholderId) {
         stakeholderRepository.incrementEscalatedDecisions(stakeholderId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DecisionResponse> getMyPendingResponses(UUID userId, UUID tenantId) {
+        // Get decisions assigned to this user that are pending
+        List<Decision> decisions = decisionRepository.findByTenantIdAndAssignedToIdAndStatusIn(
+                tenantId, userId,
+                List.of(DecisionStatus.NEEDS_INPUT, DecisionStatus.UNDER_DISCUSSION));
+        return decisions.stream()
+                .map(d -> decisionMapper.toResponse(d, 0))
+                .toList();
     }
 
     private void updateAverageResponseTime(UUID stakeholderId, double newResponseTimeHours) {

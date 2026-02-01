@@ -96,6 +96,20 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.getMyPendingDecisions(user.getUserId()));
     }
 
+    @GetMapping("/pending")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasAuthority('DECISION_VIEW')")
+    public ResponseEntity<List<DecisionResponse>> getPendingDecisions(
+            @RequestParam(required = false) UUID teamId,
+            @CurrentUser UserPrincipal user) {
+        return ResponseEntity.ok(decisionService.getPendingDecisions(user.getTenantId(), teamId));
+    }
+
+    @GetMapping("/blocking")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasAuthority('DECISION_VIEW')")
+    public ResponseEntity<List<DecisionResponse>> getBlockingDecisions(@CurrentUser UserPrincipal user) {
+        return ResponseEntity.ok(decisionService.getBlockingDecisions(user.getTenantId()));
+    }
+
     @GetMapping("/overdue")
     @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
     public ResponseEntity<List<DecisionResponse>> getOverdueDecisions(@CurrentUser UserPrincipal user) {

@@ -55,6 +55,13 @@ public interface DecisionRepository extends JpaRepository<Decision, UUID> {
 
     List<Decision> findByTenantIdAndStatusIn(UUID tenantId, List<DecisionStatus> statuses);
 
+    @Query("SELECT d FROM Decision d WHERE d.tenantId = :tenantId AND d.status IN :statuses AND d.team.id = :teamId")
+    List<Decision> findByTenantIdAndStatusInAndTeamId(@Param("tenantId") UUID tenantId,
+                                                       @Param("statuses") List<DecisionStatus> statuses,
+                                                       @Param("teamId") UUID teamId);
+
+    List<Decision> findByTenantIdAndPriorityAndStatusIn(UUID tenantId, DecisionPriority priority, List<DecisionStatus> statuses);
+
     List<Decision> findByTenantIdAndPriority(UUID tenantId, DecisionPriority priority);
 
     List<Decision> findByTenantIdAndDecisionType(UUID tenantId, DecisionType type);
