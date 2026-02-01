@@ -22,6 +22,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -34,7 +39,7 @@ public class HypothesisController {
     private final HypothesisService hypothesisService;
 
     @GetMapping
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:read')")
     public ResponseEntity<List<HypothesisResponse>> getHypotheses(
             @RequestParam(required = false) HypothesisStatus status,
             @RequestParam(required = false) UUID outcomeId,
@@ -44,8 +49,21 @@ public class HypothesisController {
                 user.getTenantId(), status, outcomeId, priority));
     }
 
+    @GetMapping("/paged")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:read')")
+    public ResponseEntity<Page<HypothesisResponse>> getHypothesesPaged(
+            @RequestParam(required = false) HypothesisStatus status,
+            @RequestParam(required = false) HypothesisPriority priority,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @CurrentUser UserPrincipal user) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return ResponseEntity.ok(hypothesisService.getHypothesesPaged(
+                user.getTenantId(), status, priority, pageable));
+    }
+
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:read')")
     public ResponseEntity<HypothesisResponse> getHypothesis(
             @PathVariable UUID id,
             @CurrentUser UserPrincipal user) {
@@ -59,7 +77,7 @@ public class HypothesisController {
     }
 
     @GetMapping("/outcome/{outcomeId}")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:read')")
     public ResponseEntity<List<HypothesisResponse>> getOutcomeHypotheses(
             @PathVariable UUID outcomeId,
             @CurrentUser UserPrincipal user) {
@@ -67,19 +85,19 @@ public class HypothesisController {
     }
 
     @GetMapping("/blocked")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:read')")
     public ResponseEntity<List<HypothesisResponse>> getBlockedHypotheses(@CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(hypothesisService.getBlockedHypotheses(user.getTenantId()));
     }
 
     @GetMapping("/active")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:read')")
     public ResponseEntity<List<HypothesisResponse>> getActiveHypotheses(@CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(hypothesisService.getActiveHypotheses(user.getTenantId()));
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:create')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:create')")
     public ResponseEntity<HypothesisResponse> createHypothesis(
             @Valid @RequestBody CreateHypothesisRequest request,
             @CurrentUser UserPrincipal user) {
@@ -89,7 +107,7 @@ public class HypothesisController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:update')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:update')")
     public ResponseEntity<HypothesisResponse> updateHypothesis(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateHypothesisRequest request,
@@ -98,7 +116,7 @@ public class HypothesisController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:delete')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:delete')")
     public ResponseEntity<Void> deleteHypothesis(
             @PathVariable UUID id,
             @CurrentUser UserPrincipal user) {
@@ -107,7 +125,7 @@ public class HypothesisController {
     }
 
     @PostMapping("/{id}/transition")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:update')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:update')")
     public ResponseEntity<HypothesisResponse> transitionHypothesis(
             @PathVariable UUID id,
             @Valid @RequestBody TransitionHypothesisRequest request,
@@ -116,7 +134,7 @@ public class HypothesisController {
     }
 
     @PostMapping("/{id}/conclude")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:validate')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:validate')")
     public ResponseEntity<HypothesisResponse> concludeHypothesis(
             @PathVariable UUID id,
             @Valid @RequestBody ConcludeHypothesisRequest request,
@@ -126,7 +144,7 @@ public class HypothesisController {
     }
 
     @PostMapping("/{id}/abandon")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:delete')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:delete')")
     public ResponseEntity<HypothesisResponse> abandonHypothesis(
             @PathVariable UUID id,
             @RequestParam String reason,
@@ -135,13 +153,13 @@ public class HypothesisController {
     }
 
     @GetMapping("/stats")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:read')")
     public ResponseEntity<Map<HypothesisStatus, Long>> getStatusCounts(@CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(hypothesisService.getStatusCounts(user.getTenantId()));
     }
 
     @GetMapping("/outcome/{outcomeId}/stats")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:read')")
     public ResponseEntity<Map<HypothesisStatus, Long>> getOutcomeStatusCounts(
             @PathVariable UUID outcomeId,
             @CurrentUser UserPrincipal user) {

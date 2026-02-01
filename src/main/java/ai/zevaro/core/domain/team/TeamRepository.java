@@ -1,5 +1,7 @@
 package ai.zevaro.core.domain.team;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,6 +19,8 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
     Optional<Team> findBySlugAndTenantId(String slug, UUID tenantId);
 
     List<Team> findByTenantId(UUID tenantId);
+
+    Page<Team> findByTenantId(UUID tenantId, Pageable pageable);
 
     List<Team> findByTenantIdAndActiveTrue(UUID tenantId);
 

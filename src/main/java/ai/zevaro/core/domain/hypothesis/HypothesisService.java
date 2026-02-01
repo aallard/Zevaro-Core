@@ -17,6 +17,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -71,6 +74,21 @@ public class HypothesisService {
         return hypotheses.stream()
                 .map(hypothesisMapper::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<HypothesisResponse> getHypothesesPaged(UUID tenantId, HypothesisStatus status, HypothesisPriority priority, Pageable pageable) {
+        Page<Hypothesis> hypotheses;
+
+        if (status != null) {
+            hypotheses = hypothesisRepository.findByTenantIdAndStatus(tenantId, status, pageable);
+        } else if (priority != null) {
+            hypotheses = hypothesisRepository.findByTenantIdAndPriority(tenantId, priority, pageable);
+        } else {
+            hypotheses = hypothesisRepository.findByTenantId(tenantId, pageable);
+        }
+
+        return hypotheses.map(hypothesisMapper::toResponse);
     }
 
     @Transactional(readOnly = true)

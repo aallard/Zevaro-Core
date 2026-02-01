@@ -12,6 +12,8 @@ import ai.zevaro.core.domain.user.UserRepository;
 import ai.zevaro.core.exception.ResourceNotFoundException;
 import ai.zevaro.core.util.SlugGenerator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,12 @@ public class TeamService {
         return teamRepository.findByTenantIdAndActiveTrue(tenantId).stream()
                 .map(teamMapper::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<TeamResponse> getTeamsPaged(UUID tenantId, Pageable pageable) {
+        return teamRepository.findByTenantId(tenantId, pageable)
+                .map(teamMapper::toResponse);
     }
 
     @Transactional(readOnly = true)

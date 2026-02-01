@@ -34,7 +34,7 @@ public class StakeholderController {
     private final StakeholderService stakeholderService;
 
     @GetMapping
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('stakeholder:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('stakeholder:read')")
     public ResponseEntity<List<StakeholderResponse>> getStakeholders(
             @RequestParam(required = false) StakeholderType type,
             @RequestParam(required = false, defaultValue = "true") Boolean activeOnly,
@@ -43,7 +43,7 @@ public class StakeholderController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('stakeholder:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('stakeholder:read')")
     public ResponseEntity<StakeholderResponse> getStakeholder(
             @PathVariable UUID id,
             @CurrentUser UserPrincipal user) {
@@ -51,7 +51,7 @@ public class StakeholderController {
     }
 
     @GetMapping("/email/{email}")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('stakeholder:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('stakeholder:read')")
     public ResponseEntity<StakeholderResponse> getStakeholderByEmail(
             @PathVariable String email,
             @CurrentUser UserPrincipal user) {
@@ -59,14 +59,14 @@ public class StakeholderController {
     }
 
     @GetMapping("/with-pending")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('stakeholder:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('stakeholder:read')")
     public ResponseEntity<List<StakeholderResponse>> getStakeholdersWithPending(
             @CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(stakeholderService.getStakeholdersWithPendingDecisions(user.getTenantId()));
     }
 
     @GetMapping("/slow-responders")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('analytics:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('analytics:read')")
     public ResponseEntity<List<StakeholderResponse>> getSlowResponders(
             @RequestParam(defaultValue = "24") double thresholdHours,
             @CurrentUser UserPrincipal user) {
@@ -74,7 +74,7 @@ public class StakeholderController {
     }
 
     @GetMapping("/search/expertise")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('stakeholder:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('stakeholder:read')")
     public ResponseEntity<List<StakeholderResponse>> findByExpertise(
             @RequestParam String expertise,
             @CurrentUser UserPrincipal user) {
@@ -82,7 +82,7 @@ public class StakeholderController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('stakeholder:create')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('stakeholder:create')")
     public ResponseEntity<StakeholderResponse> createStakeholder(
             @Valid @RequestBody CreateStakeholderRequest request,
             @CurrentUser UserPrincipal user) {
@@ -92,7 +92,7 @@ public class StakeholderController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('stakeholder:update')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('stakeholder:update')")
     public ResponseEntity<StakeholderResponse> updateStakeholder(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateStakeholderRequest request,
@@ -101,7 +101,7 @@ public class StakeholderController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('stakeholder:delete')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('stakeholder:delete')")
     public ResponseEntity<Void> deleteStakeholder(
             @PathVariable UUID id,
             @CurrentUser UserPrincipal user) {
@@ -110,7 +110,7 @@ public class StakeholderController {
     }
 
     @GetMapping("/{id}/metrics")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('analytics:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('analytics:read')")
     public ResponseEntity<StakeholderMetrics> getStakeholderMetrics(
             @PathVariable UUID id,
             @CurrentUser UserPrincipal user) {
@@ -118,7 +118,7 @@ public class StakeholderController {
     }
 
     @GetMapping("/leaderboard")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('analytics:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('analytics:read')")
     public ResponseEntity<StakeholderLeaderboard> getLeaderboard(@CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(stakeholderService.getLeaderboard(user.getTenantId()));
     }

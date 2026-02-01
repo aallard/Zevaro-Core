@@ -21,7 +21,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 import java.util.UUID;
@@ -34,13 +40,23 @@ public class TeamController {
     private final TeamService teamService;
 
     @GetMapping
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:read')")
     public ResponseEntity<List<TeamResponse>> getTeams(@CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(teamService.getTeams(user.getTenantId()));
     }
 
+    @GetMapping("/paged")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:read')")
+    public ResponseEntity<Page<TeamResponse>> getTeamsPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @CurrentUser UserPrincipal user) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "name"));
+        return ResponseEntity.ok(teamService.getTeamsPaged(user.getTenantId(), pageable));
+    }
+
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:read')")
     public ResponseEntity<TeamDetailResponse> getTeam(
             @PathVariable UUID id,
             @CurrentUser UserPrincipal user) {
@@ -48,7 +64,7 @@ public class TeamController {
     }
 
     @GetMapping("/slug/{slug}")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:read')")
     public ResponseEntity<TeamDetailResponse> getTeamBySlug(
             @PathVariable String slug,
             @CurrentUser UserPrincipal user) {
@@ -62,7 +78,7 @@ public class TeamController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:create')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:create')")
     public ResponseEntity<TeamResponse> createTeam(
             @Valid @RequestBody CreateTeamRequest request,
             @CurrentUser UserPrincipal user) {
@@ -71,7 +87,7 @@ public class TeamController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:update')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:update')")
     public ResponseEntity<TeamResponse> updateTeam(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateTeamRequest request,
@@ -80,7 +96,7 @@ public class TeamController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:delete')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:delete')")
     public ResponseEntity<Void> deleteTeam(
             @PathVariable UUID id,
             @CurrentUser UserPrincipal user) {
@@ -89,7 +105,7 @@ public class TeamController {
     }
 
     @GetMapping("/{id}/members")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:read')")
     public ResponseEntity<List<TeamMemberResponse>> getMembers(
             @PathVariable UUID id,
             @CurrentUser UserPrincipal user) {
@@ -97,7 +113,7 @@ public class TeamController {
     }
 
     @PostMapping("/{id}/members")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:manage_members')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:manage_members')")
     public ResponseEntity<TeamMemberResponse> addMember(
             @PathVariable UUID id,
             @Valid @RequestBody AddTeamMemberRequest request,
@@ -107,7 +123,7 @@ public class TeamController {
     }
 
     @PutMapping("/{id}/members/{userId}")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:manage_members')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:manage_members')")
     public ResponseEntity<TeamMemberResponse> updateMember(
             @PathVariable UUID id,
             @PathVariable UUID userId,
@@ -117,7 +133,7 @@ public class TeamController {
     }
 
     @DeleteMapping("/{id}/members/{userId}")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:manage_members')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:manage_members')")
     public ResponseEntity<Void> removeMember(
             @PathVariable UUID id,
             @PathVariable UUID userId,
