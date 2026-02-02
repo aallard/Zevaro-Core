@@ -115,9 +115,34 @@ public class DecisionService {
 
     @Transactional(readOnly = true)
     public DecisionResponse getDecisionById(UUID id, UUID tenantId) {
+        return getDecisionById(id, tenantId, false, false);
+    }
+
+    @Transactional(readOnly = true)
+    public DecisionResponse getDecisionById(UUID id, UUID tenantId, boolean includeVotes, boolean includeComments) {
         Decision decision = decisionRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", id));
-        return toResponseWithCount(decision);
+
+        int commentCount = commentRepository.countByDecisionId(decision.getId());
+        List<DecisionVote> voteEntities = voteRepository.findByDecisionId(decision.getId());
+        int voteCount = voteEntities.size();
+
+        List<VoteResponse> votes = null;
+        List<CommentResponse> comments = null;
+
+        if (includeVotes) {
+            votes = voteEntities.stream()
+                    .map(decisionMapper::toVoteResponse)
+                    .toList();
+        }
+
+        if (includeComments) {
+            comments = commentRepository.findByDecisionIdOrderByCreatedAtAsc(decision.getId()).stream()
+                    .map(decisionMapper::toCommentResponse)
+                    .toList();
+        }
+
+        return decisionMapper.toResponse(decision, commentCount, voteCount, votes, comments);
     }
 
     @Transactional(readOnly = true)

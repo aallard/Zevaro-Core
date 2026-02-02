@@ -50,5 +50,7 @@ public record DecisionResponse(
         Map<String, String> externalRefs,
         List<String> tags,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        List<VoteResponse> votes,
+        List<CommentResponse> comments
 ) {}

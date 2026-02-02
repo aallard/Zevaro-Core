@@ -39,10 +39,15 @@ public class DecisionMapper {
     private final StakeholderMapper stakeholderMapper;
 
     public DecisionResponse toResponse(Decision decision, int commentCount) {
-        return toResponse(decision, commentCount, 0);
+        return toResponse(decision, commentCount, 0, null, null);
     }
 
     public DecisionResponse toResponse(Decision decision, int commentCount, int voteCount) {
+        return toResponse(decision, commentCount, voteCount, null, null);
+    }
+
+    public DecisionResponse toResponse(Decision decision, int commentCount, int voteCount,
+                                        List<VoteResponse> votes, List<CommentResponse> comments) {
         if (decision == null) {
             return null;
         }
@@ -82,7 +87,9 @@ public class DecisionMapper {
                 parseJsonToStringMap(decision.getExternalRefs()),
                 parseJsonToList(decision.getTags()),
                 decision.getCreatedAt(),
-                decision.getUpdatedAt()
+                decision.getUpdatedAt(),
+                votes,
+                comments
         );
     }
 

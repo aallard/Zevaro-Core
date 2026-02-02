@@ -80,8 +80,10 @@ public class DecisionController {
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
     public ResponseEntity<DecisionResponse> getDecision(
             @PathVariable UUID id,
+            @RequestParam(defaultValue = "false") boolean includeVotes,
+            @RequestParam(defaultValue = "false") boolean includeComments,
             @CurrentUser UserPrincipal user) {
-        return ResponseEntity.ok(decisionService.getDecisionById(id, user.getTenantId()));
+        return ResponseEntity.ok(decisionService.getDecisionById(id, user.getTenantId(), includeVotes, includeComments));
     }
 
     @GetMapping("/queue")
