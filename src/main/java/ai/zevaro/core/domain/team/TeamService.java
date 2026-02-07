@@ -1,10 +1,15 @@
 package ai.zevaro.core.domain.team;
 
+import ai.zevaro.core.domain.decision.DecisionRepository;
+import ai.zevaro.core.domain.hypothesis.HypothesisRepository;
+import ai.zevaro.core.domain.stakeholder.StakeholderRepository;
 import ai.zevaro.core.domain.team.dto.AddTeamMemberRequest;
 import ai.zevaro.core.domain.team.dto.CreateTeamRequest;
 import ai.zevaro.core.domain.team.dto.TeamDetailResponse;
 import ai.zevaro.core.domain.team.dto.TeamMemberResponse;
 import ai.zevaro.core.domain.team.dto.TeamResponse;
+import ai.zevaro.core.domain.team.dto.TeamWorkloadResponse;
+import ai.zevaro.core.domain.team.dto.TeamWorkloadResponse.MemberWorkload;
 import ai.zevaro.core.domain.team.dto.UpdateTeamMemberRequest;
 import ai.zevaro.core.domain.team.dto.UpdateTeamRequest;
 import ai.zevaro.core.domain.user.User;
@@ -17,6 +22,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,6 +37,9 @@ public class TeamService {
     private final UserRepository userRepository;
     private final TeamMapper teamMapper;
     private final SlugGenerator slugGenerator;
+    private final DecisionRepository decisionRepository;
+    private final HypothesisRepository hypothesisRepository;
+    private final StakeholderRepository stakeholderRepository;
 
     @Transactional(readOnly = true)
     public List<TeamResponse> getTeams(UUID tenantId) {
@@ -189,5 +200,71 @@ public class TeamService {
         return teamMemberRepository.findByTeamId(teamId).stream()
                 .map(teamMapper::toMemberResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public TeamWorkloadResponse getTeamWorkload(UUID teamId, UUID tenantId) {
+        Team team = teamRepository.findByIdAndTenantId(teamId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team", "id", teamId));
+
+        List<TeamMember> members = teamMemberRepository.findByTeamId(teamId);
+
+        // Count total stakeholders (not directly associated with team, so 0)
+        // Stakeholders are associated with Projects, not Teams
+        long totalStakeholders = 0;
+
+        // Calculate pending decisions across team
+        long pendingDecisionsAcrossTeam = members.stream()
+                .mapToLong(m -> decisionRepository.countPendingForAssignee(tenantId, m.getUser().getId()))
+                .sum();
+
+        // Build member workload list
+        List<MemberWorkload> memberWorkloads = new ArrayList<>();
+        for (TeamMember member : members) {
+            UUID userId = member.getUser().getId();
+
+            // Count pending decisions
+            long decisionsPending = decisionRepository.countPendingForAssignee(tenantId, userId);
+
+            // Calculate average response time from resolved decisions
+            List<ai.zevaro.core.domain.decision.Decision> recentResolved =
+                decisionRepository.findRecentResolvedForAssignee(tenantId, userId);
+            double avgResponseTimeHours = 0;
+            if (!recentResolved.isEmpty()) {
+                avgResponseTimeHours = recentResolved.stream()
+                        .mapToDouble(d -> {
+                            if (d.getCreatedAt() != null && d.getDecidedAt() != null) {
+                                return Duration.between(d.getCreatedAt(), d.getDecidedAt()).toMinutes() / 60.0;
+                            }
+                            return 0;
+                        })
+                        .average()
+                        .orElse(0);
+            }
+
+            // Count hypotheses owned
+            long hypothesesOwned = hypothesisRepository.countOwnedByUser(tenantId, userId);
+
+            memberWorkloads.add(new MemberWorkload(
+                userId,
+                member.getUser().getFullName(),
+                member.getUser().getEmail(),
+                member.getUser().getAvatarUrl(),
+                member.getTeamRole().toString(),
+                (int) decisionsPending,
+                avgResponseTimeHours,
+                (int) hypothesesOwned,
+                member.getUser().isActive()
+            ));
+        }
+
+        return new TeamWorkloadResponse(
+            teamId,
+            team.getName(),
+            members.size(),
+            (int) totalStakeholders,
+            (int) pendingDecisionsAcrossTeam,
+            memberWorkloads
+        );
     }
 }

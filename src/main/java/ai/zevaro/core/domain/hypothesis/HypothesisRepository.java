@@ -71,4 +71,8 @@ public interface HypothesisRepository extends JpaRepository<Hypothesis, UUID> {
 
     @Query("SELECT h.status, COUNT(h) FROM Hypothesis h WHERE h.tenantId = :tenantId AND h.project.id = :projectId GROUP BY h.status")
     List<Object[]> countByStatusForProject(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
+
+    // For team workload - count hypotheses owned by user
+    @Query("SELECT COUNT(h) FROM Hypothesis h WHERE h.tenantId = :tenantId AND h.owner.id = :userId")
+    long countOwnedByUser(@Param("tenantId") UUID tenantId, @Param("userId") UUID userId);
 }

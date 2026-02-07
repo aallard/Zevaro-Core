@@ -1,6 +1,7 @@
 package ai.zevaro.core.domain.project;
 
 import ai.zevaro.core.domain.project.dto.CreateProjectRequest;
+import ai.zevaro.core.domain.project.dto.ProjectDashboardResponse;
 import ai.zevaro.core.domain.project.dto.ProjectResponse;
 import ai.zevaro.core.domain.project.dto.ProjectStatsResponse;
 import ai.zevaro.core.domain.project.dto.UpdateProjectRequest;
@@ -101,5 +102,13 @@ public class ProjectController {
             @PathVariable UUID id,
             @CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(projectService.getProjectStats(id, user.getTenantId()));
+    }
+
+    @GetMapping("/{id}/dashboard")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('project:read')")
+    public ResponseEntity<ProjectDashboardResponse> getProjectDashboard(
+            @PathVariable UUID id,
+            @CurrentUser UserPrincipal user) {
+        return ResponseEntity.ok(projectService.getProjectDashboard(id, user.getTenantId()));
     }
 }

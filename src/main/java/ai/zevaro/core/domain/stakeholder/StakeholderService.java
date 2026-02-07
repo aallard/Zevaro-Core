@@ -10,6 +10,8 @@ import ai.zevaro.core.domain.stakeholder.dto.CreateStakeholderRequest;
 import ai.zevaro.core.domain.stakeholder.dto.StakeholderLeaderboard;
 import ai.zevaro.core.domain.stakeholder.dto.StakeholderMetrics;
 import ai.zevaro.core.domain.stakeholder.dto.StakeholderResponse;
+import ai.zevaro.core.domain.stakeholder.dto.StakeholderScorecardResponse;
+import ai.zevaro.core.domain.stakeholder.dto.StakeholderScorecardResponse.ScorecardEntry;
 import ai.zevaro.core.domain.stakeholder.dto.UpdateStakeholderRequest;
 import ai.zevaro.core.domain.user.User;
 import ai.zevaro.core.domain.user.UserRepository;
@@ -22,8 +24,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -254,6 +258,56 @@ public class StakeholderService {
         List<DecisionResponse> pageContent = responses.subList(start, end);
 
         return new PageImpl<>(pageContent, PageRequest.of(page, size), responses.size());
+    }
+
+    @Transactional(readOnly = true)
+    public StakeholderScorecardResponse getStakeholderScorecard(UUID tenantId, UUID projectId) {
+        List<Stakeholder> stakeholders = projectId != null
+            ? stakeholderRepository.findByTenantIdAndProjectId(tenantId, projectId)
+            : stakeholderRepository.findByTenantId(tenantId);
+
+        // Calculate team average response time
+        List<Stakeholder> allStakeholders = stakeholderRepository.findByTenantId(tenantId);
+        double teamAvgResponseTime = allStakeholders.stream()
+                .filter(s -> s.getAvgResponseTimeHours() != null && s.getAvgResponseTimeHours() > 0)
+                .mapToDouble(Stakeholder::getAvgResponseTimeHours)
+                .average()
+                .orElse(0);
+
+        List<ScorecardEntry> entries = stakeholders.stream()
+                .map(s -> {
+                    double avgResponseTime = s.getAvgResponseTimeHours() != null ? s.getAvgResponseTimeHours() : 0;
+
+                    // Get decision domains (from expertise field)
+                    List<String> decisionDomains = s.getExpertise() != null
+                        ? Arrays.asList(s.getExpertise().split(","))
+                        : new ArrayList<>();
+
+                    // Count pending decisions
+                    int decisionsPending = s.getDecisionsPending() != null ? s.getDecisionsPending() : 0;
+
+                    // Count decisions completed this month (from User if available)
+                    int decisionsCompletedThisMonth = 0;
+                    if (s.getUser() != null) {
+                        decisionsCompletedThisMonth = (int) decisionRepository.countDecisionsCompletedThisMonth(
+                            tenantId, s.getUser().getId());
+                    }
+
+                    return new ScorecardEntry(
+                        s.getId(),
+                        s.getName(),
+                        s.getEmail(),
+                        s.getAvatarUrl(),
+                        decisionDomains,
+                        avgResponseTime,
+                        teamAvgResponseTime,
+                        decisionsPending,
+                        decisionsCompletedThisMonth
+                    );
+                })
+                .toList();
+
+        return new StakeholderScorecardResponse(entries);
     }
 
     private void updateAverageResponseTime(UUID stakeholderId, double newResponseTimeHours) {

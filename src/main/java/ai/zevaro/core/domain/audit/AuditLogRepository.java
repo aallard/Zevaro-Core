@@ -32,4 +32,8 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
 
     @Query("SELECT a.action, COUNT(a) FROM AuditLog a WHERE a.tenantId = :tenantId AND a.timestamp > :since GROUP BY a.action")
     List<Object[]> countByActionSince(@Param("tenantId") UUID tenantId, @Param("since") Instant since);
+
+    // For dashboard - recent activity for a tenant (needs pageable or native query)
+    @Query(value = "SELECT * FROM core.audit_logs WHERE tenant_id = :tenantId ORDER BY timestamp DESC LIMIT :limit", nativeQuery = true)
+    List<AuditLog> findRecentActivityForTenant(@Param("tenantId") UUID tenantId, @Param("limit") int limit);
 }

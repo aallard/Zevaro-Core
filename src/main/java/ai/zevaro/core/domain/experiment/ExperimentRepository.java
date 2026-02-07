@@ -46,4 +46,8 @@ public interface ExperimentRepository extends JpaRepository<Experiment, UUID> {
 
     @Query("SELECT COUNT(e) FROM Experiment e WHERE e.tenantId = :tenantId AND e.project.id = :projectId AND e.status = :status")
     long countByTenantIdAndProjectIdAndStatus(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId, @Param("status") ExperimentStatus status);
+
+    // For dashboard - count running experiments
+    @Query("SELECT COUNT(e) FROM Experiment e WHERE e.tenantId = :tenantId AND e.project.id = :projectId AND e.status IN ('RUNNING', 'IN_PROGRESS', 'ACTIVE')")
+    long countRunningForProject(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
 }

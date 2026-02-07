@@ -71,4 +71,12 @@ public interface OutcomeRepository extends JpaRepository<Outcome, UUID> {
 
     @Query("SELECT o.status, COUNT(o) FROM Outcome o WHERE o.tenantId = :tenantId AND o.project.id = :projectId GROUP BY o.status")
     List<Object[]> countByStatusForProject(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
+
+    // For dashboard - count validated outcomes
+    @Query("SELECT COUNT(o) FROM Outcome o WHERE o.tenantId = :tenantId AND o.project.id = :projectId AND o.status = 'VALIDATED'")
+    long countValidatedForProject(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
+
+    // For dashboard - count non-draft outcomes
+    @Query("SELECT COUNT(o) FROM Outcome o WHERE o.tenantId = :tenantId AND o.project.id = :projectId AND o.status != 'DRAFT'")
+    long countNonDraftForProject(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
 }

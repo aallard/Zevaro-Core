@@ -5,6 +5,7 @@ import ai.zevaro.core.domain.team.dto.CreateTeamRequest;
 import ai.zevaro.core.domain.team.dto.TeamDetailResponse;
 import ai.zevaro.core.domain.team.dto.TeamMemberResponse;
 import ai.zevaro.core.domain.team.dto.TeamResponse;
+import ai.zevaro.core.domain.team.dto.TeamWorkloadResponse;
 import ai.zevaro.core.domain.team.dto.UpdateTeamMemberRequest;
 import ai.zevaro.core.domain.team.dto.UpdateTeamRequest;
 import ai.zevaro.core.security.CurrentUser;
@@ -140,5 +141,13 @@ public class TeamController {
             @CurrentUser UserPrincipal user) {
         teamService.removeMember(id, userId, user.getTenantId());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/workload")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('team:read')")
+    public ResponseEntity<TeamWorkloadResponse> getTeamWorkload(
+            @PathVariable UUID id,
+            @CurrentUser UserPrincipal user) {
+        return ResponseEntity.ok(teamService.getTeamWorkload(id, user.getTenantId()));
     }
 }

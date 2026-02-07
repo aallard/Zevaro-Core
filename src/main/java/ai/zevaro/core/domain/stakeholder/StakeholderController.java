@@ -5,6 +5,7 @@ import ai.zevaro.core.domain.stakeholder.dto.CreateStakeholderRequest;
 import ai.zevaro.core.domain.stakeholder.dto.StakeholderLeaderboard;
 import ai.zevaro.core.domain.stakeholder.dto.StakeholderMetrics;
 import ai.zevaro.core.domain.stakeholder.dto.StakeholderResponse;
+import ai.zevaro.core.domain.stakeholder.dto.StakeholderScorecardResponse;
 import ai.zevaro.core.domain.stakeholder.dto.UpdateStakeholderRequest;
 import ai.zevaro.core.security.CurrentUser;
 import ai.zevaro.core.security.UserPrincipal;
@@ -149,5 +150,13 @@ public class StakeholderController {
             @CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(stakeholderService.getStakeholderResponses(
                 id, user.getTenantId(), page, size, pending, withinSla));
+    }
+
+    @GetMapping("/scorecard")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('analytics:read')")
+    public ResponseEntity<StakeholderScorecardResponse> getScorecard(
+            @RequestParam(required = false) UUID projectId,
+            @CurrentUser UserPrincipal user) {
+        return ResponseEntity.ok(stakeholderService.getStakeholderScorecard(user.getTenantId(), projectId));
     }
 }
