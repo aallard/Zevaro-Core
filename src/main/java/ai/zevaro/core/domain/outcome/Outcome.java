@@ -1,5 +1,6 @@
 package ai.zevaro.core.domain.outcome;
 
+import ai.zevaro.core.domain.project.Project;
 import ai.zevaro.core.domain.team.Team;
 import ai.zevaro.core.domain.user.User;
 import jakarta.persistence.CascadeType;
@@ -33,7 +34,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "outcomes", indexes = {
         @Index(name = "idx_outcome_tenant_status", columnList = "tenant_id, status"),
-        @Index(name = "idx_outcome_tenant_team", columnList = "tenant_id, team_id")
+        @Index(name = "idx_outcome_tenant_team", columnList = "tenant_id, team_id"),
+        @Index(name = "idx_outcome_project", columnList = "project_id")
 })
 @EntityListeners(AuditingEntityListener.class)
 @Getter
@@ -47,6 +49,10 @@ public class Outcome {
 
     @Column(name = "tenant_id", nullable = false)
     private UUID tenantId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id")
+    private Project project;
 
     @Column(nullable = false, length = 500)
     private String title;

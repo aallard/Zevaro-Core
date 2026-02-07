@@ -2,6 +2,7 @@ package ai.zevaro.core.domain.decision;
 
 import ai.zevaro.core.domain.hypothesis.Hypothesis;
 import ai.zevaro.core.domain.outcome.Outcome;
+import ai.zevaro.core.domain.project.Project;
 import ai.zevaro.core.domain.queue.DecisionQueue;
 import ai.zevaro.core.domain.stakeholder.Stakeholder;
 import ai.zevaro.core.domain.team.Team;
@@ -42,7 +43,8 @@ import java.util.UUID;
         @Index(name = "idx_decision_assigned_to", columnList = "assigned_to_id"),
         @Index(name = "idx_decision_queue", columnList = "queue_id"),
         @Index(name = "idx_decision_due", columnList = "due_at"),
-        @Index(name = "idx_decision_stakeholder", columnList = "stakeholder_id")
+        @Index(name = "idx_decision_stakeholder", columnList = "stakeholder_id"),
+        @Index(name = "idx_decision_project", columnList = "project_id")
 })
 @EntityListeners(AuditingEntityListener.class)
 @Getter
@@ -56,6 +58,10 @@ public class Decision {
 
     @Column(name = "tenant_id", nullable = false)
     private UUID tenantId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id")
+    private Project project;
 
     @Column(nullable = false, length = 500)
     private String title;

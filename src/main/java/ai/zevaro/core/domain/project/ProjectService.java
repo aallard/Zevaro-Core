@@ -134,25 +134,24 @@ public class ProjectService {
         Project project = projectRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", "id", id));
 
-        // TODO: Will be populated after ZR-002 adds project_id to entities
-        int pendingDecisionCount = 0;
-        int activeOutcomeCount = 0;
-        int runningExperimentCount = 0;
-        int totalHypothesisCount = 0;
+        int pendingDecisionCount = (int) decisionRepository.countByTenantIdAndProjectIdAndStatus(
+                tenantId, id, ai.zevaro.core.domain.decision.DecisionStatus.NEEDS_INPUT);
+        int activeOutcomeCount = (int) outcomeRepository.findByTenantIdAndProjectIdAndStatus(
+                tenantId, id, ai.zevaro.core.domain.outcome.OutcomeStatus.IN_PROGRESS).size();
+        int totalHypothesisCount = (int) hypothesisRepository.countByTenantIdAndProjectId(tenantId, id);
 
         return new ProjectStatsResponse(
                 pendingDecisionCount,
                 activeOutcomeCount,
-                runningExperimentCount,
+                0,
                 totalHypothesisCount
         );
     }
 
     private ProjectResponse toResponseWithCounts(Project project) {
-        // TODO: Will be populated after ZR-002 adds project_id to entities
-        int decisionCount = 0;
-        int outcomeCount = 0;
-        int hypothesisCount = 0;
+        int decisionCount = (int) decisionRepository.countByTenantIdAndProjectId(project.getTenantId(), project.getId());
+        int outcomeCount = (int) outcomeRepository.countByTenantIdAndProjectId(project.getTenantId(), project.getId());
+        int hypothesisCount = (int) hypothesisRepository.countByTenantIdAndProjectId(project.getTenantId(), project.getId());
         int teamMemberCount = 0;
 
         return projectMapper.toResponse(project, decisionCount, outcomeCount, hypothesisCount, teamMemberCount);

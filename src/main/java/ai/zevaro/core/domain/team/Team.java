@@ -1,5 +1,6 @@
 package ai.zevaro.core.domain.team;
 
+import ai.zevaro.core.domain.project.Project;
 import ai.zevaro.core.domain.user.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -9,6 +10,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -27,7 +29,9 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@Table(name = "teams", uniqueConstraints = {
+@Table(name = "teams", indexes = {
+        @Index(name = "idx_team_project", columnList = "project_id")
+}, uniqueConstraints = {
         @UniqueConstraint(columnNames = {"tenant_id", "slug"})
 })
 @EntityListeners(AuditingEntityListener.class)
@@ -42,6 +46,10 @@ public class Team {
 
     @Column(name = "tenant_id", nullable = false)
     private UUID tenantId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id")
+    private Project project;
 
     @Column(nullable = false)
     private String name;

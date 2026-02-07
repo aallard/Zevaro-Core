@@ -35,6 +35,7 @@ public record CreateHypothesisRequest(
         TShirtSize impact,
         ConfidenceLevel confidence,
         UUID ownerId,
+        UUID projectId,
         Map<String, Object> experimentConfig,
 
         @Size(max = 20, message = "Cannot have more than 20 tags")

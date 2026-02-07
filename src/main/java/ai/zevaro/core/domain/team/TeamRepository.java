@@ -30,4 +30,7 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
 
     @Query("SELECT t FROM Team t JOIN t.members m WHERE m.user.id = :userId AND t.tenantId = :tenantId")
     List<Team> findByMemberUserId(@Param("userId") UUID userId, @Param("tenantId") UUID tenantId);
+
+    // Project-scoped queries
+    List<Team> findByTenantIdAndProjectId(UUID tenantId, UUID projectId);
 }

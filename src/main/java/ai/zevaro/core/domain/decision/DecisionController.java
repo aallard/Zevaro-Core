@@ -51,9 +51,10 @@ public class DecisionController {
             @RequestParam(required = false) DecisionPriority priority,
             @RequestParam(required = false) DecisionType type,
             @RequestParam(required = false) UUID teamId,
+            @RequestParam(required = false) UUID projectId,
             @CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(decisionService.getDecisions(
-                user.getTenantId(), status, priority, type, teamId));
+                user.getTenantId(), status, priority, type, teamId, projectId));
     }
 
     @GetMapping("/paged")
@@ -63,6 +64,7 @@ public class DecisionController {
             @RequestParam(required = false) DecisionPriority priority,
             @RequestParam(required = false) DecisionType type,
             @RequestParam(required = false) UUID teamId,
+            @RequestParam(required = false) UUID projectId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
@@ -73,7 +75,7 @@ public class DecisionController {
                 : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, Math.min(size, 100), sort);
         return ResponseEntity.ok(decisionService.getDecisionsPaged(
-                user.getTenantId(), status, priority, type, teamId, pageable));
+                user.getTenantId(), status, priority, type, teamId, projectId, pageable));
     }
 
     @GetMapping("/{id}")

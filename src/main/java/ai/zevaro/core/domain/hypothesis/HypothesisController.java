@@ -44,9 +44,10 @@ public class HypothesisController {
             @RequestParam(required = false) HypothesisStatus status,
             @RequestParam(required = false) UUID outcomeId,
             @RequestParam(required = false) HypothesisPriority priority,
+            @RequestParam(required = false) UUID projectId,
             @CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(hypothesisService.getHypotheses(
-                user.getTenantId(), status, outcomeId, priority));
+                user.getTenantId(), status, outcomeId, priority, projectId));
     }
 
     @GetMapping("/paged")
@@ -54,12 +55,13 @@ public class HypothesisController {
     public ResponseEntity<Page<HypothesisResponse>> getHypothesesPaged(
             @RequestParam(required = false) HypothesisStatus status,
             @RequestParam(required = false) HypothesisPriority priority,
+            @RequestParam(required = false) UUID projectId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @CurrentUser UserPrincipal user) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return ResponseEntity.ok(hypothesisService.getHypothesesPaged(
-                user.getTenantId(), status, priority, pageable));
+                user.getTenantId(), status, priority, projectId, pageable));
     }
 
     @GetMapping("/{id}")

@@ -7,6 +7,8 @@ import ai.zevaro.core.domain.hypothesis.dto.TransitionHypothesisRequest;
 import ai.zevaro.core.domain.hypothesis.dto.UpdateHypothesisRequest;
 import ai.zevaro.core.domain.outcome.Outcome;
 import ai.zevaro.core.domain.outcome.OutcomeRepository;
+import ai.zevaro.core.domain.project.Project;
+import ai.zevaro.core.domain.project.ProjectRepository;
 import ai.zevaro.core.domain.user.User;
 import ai.zevaro.core.domain.user.UserRepository;
 import ai.zevaro.core.event.EventPublisher;
@@ -34,6 +36,7 @@ public class HypothesisService {
 
     private final HypothesisRepository hypothesisRepository;
     private final OutcomeRepository outcomeRepository;
+    private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final HypothesisMapper hypothesisMapper;
     private final ObjectMapper objectMapper;
@@ -58,10 +61,12 @@ public class HypothesisService {
     );
 
     @Transactional(readOnly = true)
-    public List<HypothesisResponse> getHypotheses(UUID tenantId, HypothesisStatus status, UUID outcomeId, HypothesisPriority priority) {
+    public List<HypothesisResponse> getHypotheses(UUID tenantId, HypothesisStatus status, UUID outcomeId, HypothesisPriority priority, UUID projectId) {
         List<Hypothesis> hypotheses;
 
-        if (status != null) {
+        if (projectId != null) {
+            hypotheses = hypothesisRepository.findByTenantIdAndProjectId(tenantId, projectId);
+        } else if (status != null) {
             hypotheses = hypothesisRepository.findByTenantIdAndStatus(tenantId, status);
         } else if (outcomeId != null) {
             hypotheses = hypothesisRepository.findByTenantIdAndOutcomeId(tenantId, outcomeId);
@@ -77,10 +82,12 @@ public class HypothesisService {
     }
 
     @Transactional(readOnly = true)
-    public Page<HypothesisResponse> getHypothesesPaged(UUID tenantId, HypothesisStatus status, HypothesisPriority priority, Pageable pageable) {
+    public Page<HypothesisResponse> getHypothesesPaged(UUID tenantId, HypothesisStatus status, HypothesisPriority priority, UUID projectId, Pageable pageable) {
         Page<Hypothesis> hypotheses;
 
-        if (status != null) {
+        if (projectId != null) {
+            hypotheses = hypothesisRepository.findByTenantIdAndProjectId(tenantId, projectId, pageable);
+        } else if (status != null) {
             hypotheses = hypothesisRepository.findByTenantIdAndStatus(tenantId, status, pageable);
         } else if (priority != null) {
             hypotheses = hypothesisRepository.findByTenantIdAndPriority(tenantId, priority, pageable);
@@ -101,6 +108,13 @@ public class HypothesisService {
     @Transactional(readOnly = true)
     public List<HypothesisResponse> getHypothesesForOutcome(UUID outcomeId, UUID tenantId) {
         return hypothesisRepository.findByTenantIdAndOutcomeId(tenantId, outcomeId).stream()
+                .map(hypothesisMapper::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<HypothesisResponse> getHypothesesForProject(UUID projectId, UUID tenantId) {
+        return hypothesisRepository.findByTenantIdAndProjectId(tenantId, projectId).stream()
                 .map(hypothesisMapper::toResponse)
                 .toList();
     }
@@ -133,6 +147,12 @@ public class HypothesisService {
 
         Hypothesis hypothesis = hypothesisMapper.toEntity(request, tenantId, createdById);
         hypothesis.setOutcome(outcome);
+
+        if (request.projectId() != null) {
+            Project project = projectRepository.findByIdAndTenantId(request.projectId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Project", "id", request.projectId()));
+            hypothesis.setProject(project);
+        }
 
         if (request.ownerId() != null) {
             User owner = userRepository.findByIdAndTenantId(request.ownerId(), tenantId)

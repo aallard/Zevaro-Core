@@ -19,6 +19,8 @@ import ai.zevaro.core.domain.hypothesis.HypothesisRepository;
 import ai.zevaro.core.domain.hypothesis.HypothesisStatus;
 import ai.zevaro.core.domain.outcome.Outcome;
 import ai.zevaro.core.domain.outcome.OutcomeRepository;
+import ai.zevaro.core.domain.project.Project;
+import ai.zevaro.core.domain.project.ProjectRepository;
 import ai.zevaro.core.domain.queue.DecisionQueue;
 import ai.zevaro.core.domain.queue.DecisionQueueRepository;
 import ai.zevaro.core.domain.stakeholder.Stakeholder;
@@ -53,6 +55,7 @@ public class DecisionService {
     private final DecisionVoteRepository voteRepository;
     private final UserRepository userRepository;
     private final TeamRepository teamRepository;
+    private final ProjectRepository projectRepository;
     private final OutcomeRepository outcomeRepository;
     private final HypothesisRepository hypothesisRepository;
     private final DecisionQueueRepository queueRepository;
@@ -73,10 +76,12 @@ public class DecisionService {
 
     @Transactional(readOnly = true)
     public List<DecisionResponse> getDecisions(UUID tenantId, DecisionStatus status, DecisionPriority priority,
-                                                DecisionType type, UUID teamId) {
+                                                DecisionType type, UUID teamId, UUID projectId) {
         List<Decision> decisions;
 
-        if (status != null) {
+        if (projectId != null) {
+            decisions = decisionRepository.findByTenantIdAndProjectId(tenantId, projectId);
+        } else if (status != null) {
             decisions = decisionRepository.findByTenantIdAndStatus(tenantId, status);
         } else if (priority != null) {
             decisions = decisionRepository.findByTenantIdAndPriority(tenantId, priority);
@@ -95,10 +100,12 @@ public class DecisionService {
 
     @Transactional(readOnly = true)
     public Page<DecisionResponse> getDecisionsPaged(UUID tenantId, DecisionStatus status, DecisionPriority priority,
-                                                     DecisionType type, UUID teamId, Pageable pageable) {
+                                                     DecisionType type, UUID teamId, UUID projectId, Pageable pageable) {
         Page<Decision> decisions;
 
-        if (status != null) {
+        if (projectId != null) {
+            decisions = decisionRepository.findByTenantIdAndProjectId(tenantId, projectId, pageable);
+        } else if (status != null) {
             decisions = decisionRepository.findByTenantIdAndStatus(tenantId, status, pageable);
         } else if (priority != null) {
             decisions = decisionRepository.findByTenantIdAndPriority(tenantId, priority, pageable);
@@ -211,6 +218,13 @@ public class DecisionService {
     }
 
     @Transactional(readOnly = true)
+    public List<DecisionResponse> getDecisionsForProject(UUID projectId, UUID tenantId) {
+        return decisionRepository.findByTenantIdAndProjectId(tenantId, projectId).stream()
+                .map(this::toResponseWithCount)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<DecisionResponse> getDecisionsForOutcome(UUID outcomeId, UUID tenantId) {
         return decisionRepository.findByOutcomeId(outcomeId).stream()
                 .map(this::toResponseWithCount)
@@ -260,6 +274,12 @@ public class DecisionService {
             Team team = teamRepository.findByIdAndTenantId(request.teamId(), tenantId)
                     .orElseThrow(() -> new ResourceNotFoundException("Team", "id", request.teamId()));
             decision.setTeam(team);
+        }
+
+        if (request.projectId() != null) {
+            Project project = projectRepository.findByIdAndTenantId(request.projectId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Project", "id", request.projectId()));
+            decision.setProject(project);
         }
 
         if (request.queueId() != null) {

@@ -51,4 +51,7 @@ public interface StakeholderRepository extends JpaRepository<Stakeholder, UUID> 
     @Modifying
     @Query("UPDATE Stakeholder s SET s.decisionsEscalated = s.decisionsEscalated + 1 WHERE s.id = :id")
     void incrementEscalatedDecisions(@Param("id") UUID id);
+
+    // Project-scoped queries
+    List<Stakeholder> findByTenantIdAndProjectId(UUID tenantId, UUID projectId);
 }

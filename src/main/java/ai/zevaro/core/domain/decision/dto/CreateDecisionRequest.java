@@ -33,6 +33,7 @@ public record CreateDecisionRequest(
         UUID outcomeId,
         UUID hypothesisId,
         UUID teamId,
+        UUID projectId,
         UUID queueId,
         UUID stakeholderId,
 

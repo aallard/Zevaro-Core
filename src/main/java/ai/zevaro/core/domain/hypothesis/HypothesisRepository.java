@@ -58,4 +58,17 @@ public interface HypothesisRepository extends JpaRepository<Hypothesis, UUID> {
     List<Object[]> countByStatusForOutcome(@Param("outcomeId") UUID outcomeId);
 
     boolean existsByOutcomeIdAndTenantId(UUID outcomeId, UUID tenantId);
+
+    // Project-scoped queries
+    Page<Hypothesis> findByTenantIdAndProjectId(UUID tenantId, UUID projectId, Pageable pageable);
+
+    List<Hypothesis> findByTenantIdAndProjectId(UUID tenantId, UUID projectId);
+
+    List<Hypothesis> findByTenantIdAndProjectIdAndStatus(UUID tenantId, UUID projectId, HypothesisStatus status);
+
+    @Query("SELECT COUNT(h) FROM Hypothesis h WHERE h.tenantId = :tenantId AND h.project.id = :projectId")
+    long countByTenantIdAndProjectId(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
+
+    @Query("SELECT h.status, COUNT(h) FROM Hypothesis h WHERE h.tenantId = :tenantId AND h.project.id = :projectId GROUP BY h.status")
+    List<Object[]> countByStatusForProject(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
 }

@@ -44,9 +44,10 @@ public class OutcomeController {
             @RequestParam(required = false) OutcomeStatus status,
             @RequestParam(required = false) UUID teamId,
             @RequestParam(required = false) OutcomePriority priority,
+            @RequestParam(required = false) UUID projectId,
             @CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(outcomeService.getOutcomes(
-                user.getTenantId(), status, teamId, priority));
+                user.getTenantId(), status, teamId, priority, projectId));
     }
 
     @GetMapping("/paged")
@@ -55,6 +56,7 @@ public class OutcomeController {
             @RequestParam(required = false) OutcomeStatus status,
             @RequestParam(required = false) UUID teamId,
             @RequestParam(required = false) OutcomePriority priority,
+            @RequestParam(required = false) UUID projectId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
@@ -65,7 +67,7 @@ public class OutcomeController {
                 : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, Math.min(size, 100), sort);
         return ResponseEntity.ok(outcomeService.getOutcomesPaged(
-                user.getTenantId(), status, teamId, priority, pageable));
+                user.getTenantId(), status, teamId, priority, projectId, pageable));
     }
 
     @GetMapping("/{id}")

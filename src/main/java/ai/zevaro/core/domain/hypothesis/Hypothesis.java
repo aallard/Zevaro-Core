@@ -1,6 +1,7 @@
 package ai.zevaro.core.domain.hypothesis;
 
 import ai.zevaro.core.domain.outcome.Outcome;
+import ai.zevaro.core.domain.project.Project;
 import ai.zevaro.core.domain.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -29,7 +30,8 @@ import java.util.UUID;
 @Table(name = "hypotheses", indexes = {
         @Index(name = "idx_hypothesis_tenant_status", columnList = "tenant_id, status"),
         @Index(name = "idx_hypothesis_tenant_outcome", columnList = "tenant_id, outcome_id"),
-        @Index(name = "idx_hypothesis_tenant_owner", columnList = "tenant_id, owner_id")
+        @Index(name = "idx_hypothesis_tenant_owner", columnList = "tenant_id, owner_id"),
+        @Index(name = "idx_hypothesis_project", columnList = "project_id")
 })
 @EntityListeners(AuditingEntityListener.class)
 @Getter
@@ -43,6 +45,10 @@ public class Hypothesis {
 
     @Column(name = "tenant_id", nullable = false)
     private UUID tenantId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id")
+    private Project project;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "outcome_id", nullable = false)

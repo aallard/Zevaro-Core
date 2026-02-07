@@ -103,4 +103,20 @@ public interface DecisionRepository extends JpaRepository<Decision, UUID> {
 
     @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (decided_at - created_at))/3600) FROM core.decisions WHERE tenant_id = :tenantId AND decided_at IS NOT NULL AND decided_at > :since", nativeQuery = true)
     Double getAverageDecisionTimeHours(@Param("tenantId") UUID tenantId, @Param("since") Instant since);
+
+    // Project-scoped queries
+    Page<Decision> findByTenantIdAndProjectId(UUID tenantId, UUID projectId, Pageable pageable);
+
+    List<Decision> findByTenantIdAndProjectId(UUID tenantId, UUID projectId);
+
+    List<Decision> findByTenantIdAndProjectIdAndStatus(UUID tenantId, UUID projectId, DecisionStatus status);
+
+    @Query("SELECT COUNT(d) FROM Decision d WHERE d.tenantId = :tenantId AND d.project.id = :projectId")
+    long countByTenantIdAndProjectId(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
+
+    @Query("SELECT COUNT(d) FROM Decision d WHERE d.tenantId = :tenantId AND d.project.id = :projectId AND d.status = :status")
+    long countByTenantIdAndProjectIdAndStatus(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId, @Param("status") DecisionStatus status);
+
+    @Query("SELECT d.status, COUNT(d) FROM Decision d WHERE d.tenantId = :tenantId AND d.project.id = :projectId GROUP BY d.status")
+    List<Object[]> countByStatusForProject(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
 }

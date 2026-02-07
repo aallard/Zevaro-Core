@@ -1,5 +1,6 @@
 package ai.zevaro.core.domain.stakeholder;
 
+import ai.zevaro.core.domain.project.Project;
 import ai.zevaro.core.domain.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,6 +13,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -27,7 +29,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "stakeholders", indexes = {
         @Index(name = "idx_stakeholder_tenant", columnList = "tenant_id"),
-        @Index(name = "idx_stakeholder_user", columnList = "user_id")
+        @Index(name = "idx_stakeholder_user", columnList = "user_id"),
+        @Index(name = "idx_stakeholder_project", columnList = "project_id")
 })
 @EntityListeners(AuditingEntityListener.class)
 @Getter
@@ -41,6 +44,10 @@ public class Stakeholder {
 
     @Column(name = "tenant_id", nullable = false)
     private UUID tenantId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id")
+    private Project project;
 
     @Column(nullable = false)
     private String name;
