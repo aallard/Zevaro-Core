@@ -5,7 +5,7 @@ import ai.zevaro.core.domain.experiment.dto.ExperimentResponse;
 import ai.zevaro.core.domain.experiment.dto.ExperimentSummary;
 import ai.zevaro.core.domain.experiment.dto.UpdateExperimentRequest;
 import ai.zevaro.core.domain.hypothesis.dto.HypothesisSummary;
-import ai.zevaro.core.domain.project.ProjectMapper;
+import ai.zevaro.core.domain.program.ProgramMapper;
 import ai.zevaro.core.domain.user.UserMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -24,7 +24,7 @@ import java.util.UUID;
 public class ExperimentMapper {
 
     private final ObjectMapper objectMapper;
-    private final ProjectMapper projectMapper;
+    private final ProgramMapper programMapper;
     private final UserMapper userMapper;
 
     public ExperimentResponse toResponse(Experiment experiment) {
@@ -63,7 +63,7 @@ public class ExperimentMapper {
                 experiment.getControlValue(),
                 experiment.getVariantValue(),
                 experiment.getConfidenceLevel(),
-                experiment.getProject() != null ? projectMapper.toSummary(experiment.getProject()) : null,
+                experiment.getProgram() != null ? programMapper.toSummary(experiment.getProgram()) : null,
                 hypothesisSummary,
                 experiment.getOwner() != null ? userMapper.toSummary(experiment.getOwner()) : null,
                 experiment.getCreatedAt(),

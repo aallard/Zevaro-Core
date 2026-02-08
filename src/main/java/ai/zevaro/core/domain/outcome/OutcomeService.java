@@ -6,8 +6,8 @@ import ai.zevaro.core.domain.outcome.dto.InvalidateOutcomeRequest;
 import ai.zevaro.core.domain.outcome.dto.OutcomeResponse;
 import ai.zevaro.core.domain.outcome.dto.UpdateOutcomeRequest;
 import ai.zevaro.core.domain.outcome.dto.ValidateOutcomeRequest;
-import ai.zevaro.core.domain.project.Project;
-import ai.zevaro.core.domain.project.ProjectRepository;
+import ai.zevaro.core.domain.program.Program;
+import ai.zevaro.core.domain.program.ProgramRepository;
 import ai.zevaro.core.domain.team.Team;
 import ai.zevaro.core.domain.team.TeamRepository;
 import ai.zevaro.core.domain.user.User;
@@ -37,7 +37,7 @@ public class OutcomeService {
     private final OutcomeRepository outcomeRepository;
     private final HypothesisRepository hypothesisRepository;
     private final TeamRepository teamRepository;
-    private final ProjectRepository projectRepository;
+    private final ProgramRepository programRepository;
     private final UserRepository userRepository;
     private final OutcomeMapper outcomeMapper;
     private final ObjectMapper objectMapper;
@@ -54,7 +54,7 @@ public class OutcomeService {
         List<Outcome> outcomes;
 
         if (projectId != null) {
-            outcomes = outcomeRepository.findByTenantIdAndProjectId(tenantId, projectId);
+            outcomes = outcomeRepository.findByTenantIdAndProgramId(tenantId, projectId);
         } else if (status != null) {
             outcomes = outcomeRepository.findByTenantIdAndStatus(tenantId, status);
         } else if (teamId != null) {
@@ -76,7 +76,7 @@ public class OutcomeService {
         Page<Outcome> outcomes;
 
         if (projectId != null) {
-            outcomes = outcomeRepository.findByTenantIdAndProjectId(tenantId, projectId, pageable);
+            outcomes = outcomeRepository.findByTenantIdAndProgramId(tenantId, projectId, pageable);
         } else if (status != null) {
             outcomes = outcomeRepository.findByTenantIdAndStatus(tenantId, status, pageable);
         } else if (teamId != null) {
@@ -106,7 +106,7 @@ public class OutcomeService {
 
     @Transactional(readOnly = true)
     public List<OutcomeResponse> getOutcomesForProject(UUID projectId, UUID tenantId) {
-        return outcomeRepository.findByTenantIdAndProjectId(tenantId, projectId).stream()
+        return outcomeRepository.findByTenantIdAndProgramId(tenantId, projectId).stream()
                 .map(this::toResponseWithCount)
                 .toList();
     }
@@ -123,9 +123,9 @@ public class OutcomeService {
         Outcome outcome = outcomeMapper.toEntity(request, tenantId, createdById);
 
         if (request.projectId() != null) {
-            Project project = projectRepository.findByIdAndTenantId(request.projectId(), tenantId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Project", "id", request.projectId()));
-            outcome.setProject(project);
+            Program program = programRepository.findByIdAndTenantId(request.projectId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Program", "id", request.projectId()));
+            outcome.setProgram(program);
         }
 
         if (request.teamId() != null) {

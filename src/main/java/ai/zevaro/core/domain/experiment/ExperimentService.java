@@ -6,8 +6,8 @@ import ai.zevaro.core.domain.experiment.dto.RecordResultsRequest;
 import ai.zevaro.core.domain.experiment.dto.UpdateExperimentRequest;
 import ai.zevaro.core.domain.hypothesis.Hypothesis;
 import ai.zevaro.core.domain.hypothesis.HypothesisRepository;
-import ai.zevaro.core.domain.project.Project;
-import ai.zevaro.core.domain.project.ProjectRepository;
+import ai.zevaro.core.domain.program.Program;
+import ai.zevaro.core.domain.program.ProgramRepository;
 import ai.zevaro.core.domain.user.User;
 import ai.zevaro.core.domain.user.UserRepository;
 import ai.zevaro.core.exception.ResourceNotFoundException;
@@ -29,7 +29,7 @@ public class ExperimentService {
 
     private final ExperimentRepository experimentRepository;
     private final HypothesisRepository hypothesisRepository;
-    private final ProjectRepository projectRepository;
+    private final ProgramRepository programRepository;
     private final UserRepository userRepository;
     private final ExperimentMapper experimentMapper;
     private final ObjectMapper objectMapper;
@@ -40,9 +40,9 @@ public class ExperimentService {
 
         if (projectId != null) {
             if (status != null) {
-                experiments = experimentRepository.findByTenantIdAndProjectIdAndStatus(tenantId, projectId, status);
+                experiments = experimentRepository.findByTenantIdAndProgramIdAndStatus(tenantId, projectId, status);
             } else {
-                experiments = experimentRepository.findByTenantIdAndProjectId(tenantId, projectId);
+                experiments = experimentRepository.findByTenantIdAndProgramId(tenantId, projectId);
             }
         } else if (status != null) {
             experiments = experimentRepository.findByTenantIdAndStatus(tenantId, status);
@@ -63,7 +63,7 @@ public class ExperimentService {
             if (status != null) {
                 experiments = experimentRepository.findByTenantIdAndStatus(tenantId, status, pageable);
             } else {
-                experiments = experimentRepository.findByTenantIdAndProjectId(tenantId, projectId, pageable);
+                experiments = experimentRepository.findByTenantIdAndProgramId(tenantId, projectId, pageable);
             }
         } else if (status != null) {
             experiments = experimentRepository.findByTenantIdAndStatus(tenantId, status, pageable);
@@ -94,9 +94,9 @@ public class ExperimentService {
         Experiment experiment = experimentMapper.toEntity(request, tenantId, createdById);
 
         if (request.projectId() != null) {
-            Project project = projectRepository.findByIdAndTenantId(request.projectId(), tenantId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Project", "id", request.projectId()));
-            experiment.setProject(project);
+            Program program = programRepository.findByIdAndTenantId(request.projectId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Program", "id", request.projectId()));
+            experiment.setProgram(program);
         }
 
         if (request.hypothesisId() != null) {
@@ -123,9 +123,9 @@ public class ExperimentService {
         experimentMapper.updateEntity(experiment, request);
 
         if (request.projectId() != null) {
-            Project project = projectRepository.findByIdAndTenantId(request.projectId(), tenantId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Project", "id", request.projectId()));
-            experiment.setProject(project);
+            Program program = programRepository.findByIdAndTenantId(request.projectId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Program", "id", request.projectId()));
+            experiment.setProgram(program);
         }
 
         if (request.hypothesisId() != null) {

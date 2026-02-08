@@ -10,7 +10,7 @@ import ai.zevaro.core.domain.decision.dto.UpdateDecisionRequest;
 import ai.zevaro.core.domain.decision.dto.VoteResponse;
 import ai.zevaro.core.domain.hypothesis.HypothesisMapper;
 import ai.zevaro.core.domain.outcome.OutcomeMapper;
-import ai.zevaro.core.domain.project.ProjectMapper;
+import ai.zevaro.core.domain.program.ProgramMapper;
 import ai.zevaro.core.domain.queue.DecisionQueueMapper;
 import ai.zevaro.core.domain.stakeholder.StakeholderMapper;
 import ai.zevaro.core.domain.team.TeamMapper;
@@ -34,7 +34,7 @@ public class DecisionMapper {
     private final ObjectMapper objectMapper;
     private final UserMapper userMapper;
     private final TeamMapper teamMapper;
-    private final ProjectMapper projectMapper;
+    private final ProgramMapper programMapper;
     private final OutcomeMapper outcomeMapper;
     private final HypothesisMapper hypothesisMapper;
     private final DecisionQueueMapper queueMapper;
@@ -68,7 +68,7 @@ public class DecisionMapper {
                 decision.getOutcome() != null ? outcomeMapper.toSummary(decision.getOutcome()) : null,
                 decision.getHypothesis() != null ? hypothesisMapper.toSummary(decision.getHypothesis()) : null,
                 decision.getTeam() != null ? teamMapper.toSummary(decision.getTeam()) : null,
-                decision.getProject() != null ? projectMapper.toSummary(decision.getProject()) : null,
+                decision.getProgram() != null ? programMapper.toSummary(decision.getProgram()) : null,
                 decision.getQueue() != null ? queueMapper.toSummary(decision.getQueue()) : null,
                 decision.getStakeholder() != null ? stakeholderMapper.toSummary(decision.getStakeholder()) : null,
                 decision.getSlaHours(),

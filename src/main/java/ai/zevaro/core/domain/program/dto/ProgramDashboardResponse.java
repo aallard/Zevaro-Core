@@ -1,11 +1,11 @@
-package ai.zevaro.core.domain.project.dto;
+package ai.zevaro.core.domain.program.dto;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-public record ProjectDashboardResponse(
+public record ProgramDashboardResponse(
     // Metric cards
     int pendingDecisionCount,
     int slaBreachedDecisionCount,

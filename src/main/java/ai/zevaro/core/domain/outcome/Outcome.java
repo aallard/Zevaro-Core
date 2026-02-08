@@ -1,6 +1,6 @@
 package ai.zevaro.core.domain.outcome;
 
-import ai.zevaro.core.domain.project.Project;
+import ai.zevaro.core.domain.program.Program;
 import ai.zevaro.core.domain.team.Team;
 import ai.zevaro.core.domain.user.User;
 import jakarta.persistence.CascadeType;
@@ -52,7 +52,7 @@ public class Outcome {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
-    private Project project;
+    private Program program;
 
     @Column(nullable = false, length = 500)
     private String title;

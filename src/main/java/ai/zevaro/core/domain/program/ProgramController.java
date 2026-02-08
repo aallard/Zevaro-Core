@@ -1,10 +1,10 @@
-package ai.zevaro.core.domain.project;
+package ai.zevaro.core.domain.program;
 
-import ai.zevaro.core.domain.project.dto.CreateProjectRequest;
-import ai.zevaro.core.domain.project.dto.ProjectDashboardResponse;
-import ai.zevaro.core.domain.project.dto.ProjectResponse;
-import ai.zevaro.core.domain.project.dto.ProjectStatsResponse;
-import ai.zevaro.core.domain.project.dto.UpdateProjectRequest;
+import ai.zevaro.core.domain.program.dto.CreateProgramRequest;
+import ai.zevaro.core.domain.program.dto.ProgramDashboardResponse;
+import ai.zevaro.core.domain.program.dto.ProgramResponse;
+import ai.zevaro.core.domain.program.dto.ProgramStatsResponse;
+import ai.zevaro.core.domain.program.dto.UpdateProgramRequest;
 import ai.zevaro.core.security.CurrentUser;
 import ai.zevaro.core.security.UserPrincipal;
 import jakarta.validation.Valid;
@@ -30,24 +30,24 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/projects")
+@RequestMapping("/api/v1/programs")
 @RequiredArgsConstructor
-public class ProjectController {
+public class ProgramController {
 
-    private final ProjectService projectService;
+    private final ProgramService programService;
 
     @GetMapping
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('project:read')")
-    public ResponseEntity<List<ProjectResponse>> getProjects(
-            @RequestParam(required = false) ProjectStatus status,
+    public ResponseEntity<List<ProgramResponse>> getPrograms(
+            @RequestParam(required = false) ProgramStatus status,
             @CurrentUser UserPrincipal user) {
-        return ResponseEntity.ok(projectService.getProjects(user.getTenantId(), status));
+        return ResponseEntity.ok(programService.getPrograms(user.getTenantId(), status));
     }
 
     @GetMapping("/paged")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('project:read')")
-    public ResponseEntity<Page<ProjectResponse>> getProjectsPaged(
-            @RequestParam(required = false) ProjectStatus status,
+    public ResponseEntity<Page<ProgramResponse>> getProgramsPaged(
+            @RequestParam(required = false) ProgramStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
@@ -57,58 +57,58 @@ public class ProjectController {
                 ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, Math.min(size, 100), sort);
-        return ResponseEntity.ok(projectService.getProjectsPaged(user.getTenantId(), status, pageable));
+        return ResponseEntity.ok(programService.getProgramsPaged(user.getTenantId(), status, pageable));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('project:read')")
-    public ResponseEntity<ProjectResponse> getProject(
+    public ResponseEntity<ProgramResponse> getProgram(
             @PathVariable UUID id,
             @CurrentUser UserPrincipal user) {
-        return ResponseEntity.ok(projectService.getProjectById(id, user.getTenantId()));
+        return ResponseEntity.ok(programService.getProgramById(id, user.getTenantId()));
     }
 
     @PostMapping
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('project:create')")
-    public ResponseEntity<ProjectResponse> createProject(
-            @Valid @RequestBody CreateProjectRequest request,
+    public ResponseEntity<ProgramResponse> createProgram(
+            @Valid @RequestBody CreateProgramRequest request,
             @CurrentUser UserPrincipal user) {
-        ProjectResponse project = projectService.createProject(
+        ProgramResponse program = programService.createProgram(
                 user.getTenantId(), request, user.getUserId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(project);
+        return ResponseEntity.status(HttpStatus.CREATED).body(program);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('project:update')")
-    public ResponseEntity<ProjectResponse> updateProject(
+    public ResponseEntity<ProgramResponse> updateProgram(
             @PathVariable UUID id,
-            @Valid @RequestBody UpdateProjectRequest request,
+            @Valid @RequestBody UpdateProgramRequest request,
             @CurrentUser UserPrincipal user) {
-        return ResponseEntity.ok(projectService.updateProject(id, user.getTenantId(), request));
+        return ResponseEntity.ok(programService.updateProgram(id, user.getTenantId(), request));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('project:delete')")
-    public ResponseEntity<Void> deleteProject(
+    public ResponseEntity<Void> deleteProgram(
             @PathVariable UUID id,
             @CurrentUser UserPrincipal user) {
-        projectService.deleteProject(id, user.getTenantId());
+        programService.deleteProgram(id, user.getTenantId());
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/stats")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('project:read')")
-    public ResponseEntity<ProjectStatsResponse> getProjectStats(
+    public ResponseEntity<ProgramStatsResponse> getProgramStats(
             @PathVariable UUID id,
             @CurrentUser UserPrincipal user) {
-        return ResponseEntity.ok(projectService.getProjectStats(id, user.getTenantId()));
+        return ResponseEntity.ok(programService.getProgramStats(id, user.getTenantId()));
     }
 
     @GetMapping("/{id}/dashboard")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('project:read')")
-    public ResponseEntity<ProjectDashboardResponse> getProjectDashboard(
+    public ResponseEntity<ProgramDashboardResponse> getProgramDashboard(
             @PathVariable UUID id,
             @CurrentUser UserPrincipal user) {
-        return ResponseEntity.ok(projectService.getProjectDashboard(id, user.getTenantId()));
+        return ResponseEntity.ok(programService.getProgramDashboard(id, user.getTenantId()));
     }
 }

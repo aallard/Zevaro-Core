@@ -5,7 +5,7 @@ import ai.zevaro.core.domain.hypothesis.HypothesisPriority;
 import ai.zevaro.core.domain.hypothesis.HypothesisStatus;
 import ai.zevaro.core.domain.hypothesis.TShirtSize;
 import ai.zevaro.core.domain.outcome.dto.OutcomeSummary;
-import ai.zevaro.core.domain.project.dto.ProjectSummary;
+import ai.zevaro.core.domain.program.dto.ProgramSummary;
 import ai.zevaro.core.domain.user.dto.UserSummary;
 
 import java.time.Instant;
@@ -16,7 +16,7 @@ import java.util.UUID;
 public record HypothesisResponse(
         UUID id,
         OutcomeSummary outcome,
-        ProjectSummary project,
+        ProgramSummary program,
         String title,
         String belief,
         String expectedResult,

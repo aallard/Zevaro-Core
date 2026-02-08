@@ -263,7 +263,7 @@ public class StakeholderService {
     @Transactional(readOnly = true)
     public StakeholderScorecardResponse getStakeholderScorecard(UUID tenantId, UUID projectId) {
         List<Stakeholder> stakeholders = projectId != null
-            ? stakeholderRepository.findByTenantIdAndProjectId(tenantId, projectId)
+            ? stakeholderRepository.findByTenantIdAndProgramId(tenantId, projectId)
             : stakeholderRepository.findByTenantId(tenantId);
 
         // Calculate team average response time

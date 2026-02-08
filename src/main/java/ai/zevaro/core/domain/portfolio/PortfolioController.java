@@ -5,7 +5,7 @@ import ai.zevaro.core.domain.portfolio.dto.CreatePortfolioRequest;
 import ai.zevaro.core.domain.portfolio.dto.PortfolioDashboardResponse;
 import ai.zevaro.core.domain.portfolio.dto.PortfolioResponse;
 import ai.zevaro.core.domain.portfolio.dto.UpdatePortfolioRequest;
-import ai.zevaro.core.domain.project.Project;
+import ai.zevaro.core.domain.program.Program;
 import ai.zevaro.core.security.CurrentUser;
 import ai.zevaro.core.security.UserPrincipal;
 import jakarta.validation.Valid;
@@ -105,7 +105,7 @@ public class PortfolioController {
 
     @GetMapping("/{id}/programs")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('portfolio:read')")
-    public ResponseEntity<List<Project>> getPrograms(
+    public ResponseEntity<List<Program>> getPrograms(
             @PathVariable UUID id,
             @CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(portfolioService.getPrograms(id, user.getTenantId()));

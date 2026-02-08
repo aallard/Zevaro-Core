@@ -2,7 +2,7 @@ package ai.zevaro.core.domain.decision;
 
 import ai.zevaro.core.domain.hypothesis.Hypothesis;
 import ai.zevaro.core.domain.outcome.Outcome;
-import ai.zevaro.core.domain.project.Project;
+import ai.zevaro.core.domain.program.Program;
 import ai.zevaro.core.domain.queue.DecisionQueue;
 import ai.zevaro.core.domain.stakeholder.Stakeholder;
 import ai.zevaro.core.domain.team.Team;
@@ -61,7 +61,7 @@ public class Decision {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
-    private Project project;
+    private Program program;
 
     @Column(nullable = false, length = 500)
     private String title;

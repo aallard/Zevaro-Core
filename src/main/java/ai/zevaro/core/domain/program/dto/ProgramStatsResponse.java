@@ -1,6 +1,6 @@
-package ai.zevaro.core.domain.project.dto;
+package ai.zevaro.core.domain.program.dto;
 
-public record ProjectStatsResponse(
+public record ProgramStatsResponse(
         int pendingDecisionCount,
         int activeOutcomeCount,
         int runningExperimentCount,

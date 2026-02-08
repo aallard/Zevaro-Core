@@ -5,7 +5,7 @@ import ai.zevaro.core.domain.decision.DecisionStatus;
 import ai.zevaro.core.domain.decision.DecisionType;
 import ai.zevaro.core.domain.hypothesis.dto.HypothesisSummary;
 import ai.zevaro.core.domain.outcome.dto.OutcomeSummary;
-import ai.zevaro.core.domain.project.dto.ProjectSummary;
+import ai.zevaro.core.domain.program.dto.ProgramSummary;
 import ai.zevaro.core.domain.queue.dto.QueueSummary;
 import ai.zevaro.core.domain.stakeholder.dto.StakeholderSummary;
 import ai.zevaro.core.domain.team.dto.TeamSummary;
@@ -30,7 +30,7 @@ public record DecisionResponse(
         OutcomeSummary outcome,
         HypothesisSummary hypothesis,
         TeamSummary team,
-        ProjectSummary project,
+        ProgramSummary program,
         QueueSummary queue,
         StakeholderSummary stakeholder,
         Integer slaHours,

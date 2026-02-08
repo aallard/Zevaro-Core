@@ -11,9 +11,9 @@ import ai.zevaro.core.domain.portfolio.dto.PortfolioDashboardResponse;
 import ai.zevaro.core.domain.portfolio.dto.PortfolioResponse;
 import ai.zevaro.core.domain.portfolio.dto.ProgramHealthSummary;
 import ai.zevaro.core.domain.portfolio.dto.UpdatePortfolioRequest;
-import ai.zevaro.core.domain.project.Project;
-import ai.zevaro.core.domain.project.ProjectRepository;
-import ai.zevaro.core.domain.project.ProjectStatus;
+import ai.zevaro.core.domain.program.Program;
+import ai.zevaro.core.domain.program.ProgramRepository;
+import ai.zevaro.core.domain.program.ProgramStatus;
 import ai.zevaro.core.domain.user.User;
 import ai.zevaro.core.domain.user.UserRepository;
 import ai.zevaro.core.exception.ResourceNotFoundException;
@@ -36,7 +36,7 @@ import java.util.UUID;
 public class PortfolioService {
 
     private final PortfolioRepository portfolioRepository;
-    private final ProjectRepository projectRepository;
+    private final ProgramRepository programRepository;
     private final UserRepository userRepository;
     private final DecisionRepository decisionRepository;
     private final PortfolioMapper portfolioMapper;
@@ -153,11 +153,11 @@ public class PortfolioService {
     }
 
     @Transactional(readOnly = true)
-    public List<Project> getPrograms(UUID portfolioId, UUID tenantId) {
+    public List<Program> getPrograms(UUID portfolioId, UUID tenantId) {
         portfolioRepository.findByIdAndTenantId(portfolioId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", portfolioId));
 
-        return projectRepository.findByTenantIdAndPortfolioId(tenantId, portfolioId);
+        return programRepository.findByTenantIdAndPortfolioId(tenantId, portfolioId);
     }
 
     @Transactional(readOnly = true)
@@ -165,14 +165,14 @@ public class PortfolioService {
         Portfolio portfolio = portfolioRepository.findByIdAndTenantId(portfolioId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", portfolioId));
 
-        List<Project> programs = projectRepository.findByTenantIdAndPortfolioId(tenantId, portfolioId);
+        List<Program> programs = programRepository.findByTenantIdAndPortfolioId(tenantId, portfolioId);
 
         int totalPrograms = programs.size();
         int activePrograms = (int) programs.stream()
-                .filter(p -> p.getStatus() == ProjectStatus.ACTIVE)
+                .filter(p -> p.getStatus() == ProgramStatus.ACTIVE)
                 .count();
 
-        List<UUID> programIds = programs.stream().map(Project::getId).toList();
+        List<UUID> programIds = programs.stream().map(Program::getId).toList();
 
         // Aggregate decisions across all programs in this portfolio
         int totalPending = 0;
@@ -182,7 +182,7 @@ public class PortfolioService {
 
         List<ProgramHealthSummary> programSummaries = new ArrayList<>();
 
-        for (Project program : programs) {
+        for (Program program : programs) {
             int pending = (int) decisionRepository.countByTenantIdAndProjectIdAndStatus(
                     tenantId, program.getId(), DecisionStatus.NEEDS_INPUT);
             totalPending += pending;
@@ -237,8 +237,8 @@ public class PortfolioService {
         portfolioRepository.findByIdAndTenantId(portfolioId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Portfolio", "id", portfolioId));
 
-        List<Project> programs = projectRepository.findByTenantIdAndPortfolioId(tenantId, portfolioId);
-        List<UUID> programIds = programs.stream().map(Project::getId).toList();
+        List<Program> programs = programRepository.findByTenantIdAndPortfolioId(tenantId, portfolioId);
+        List<UUID> programIds = programs.stream().map(Program::getId).toList();
 
         if (programIds.isEmpty()) {
             return List.of();
@@ -257,6 +257,6 @@ public class PortfolioService {
     }
 
     private int countPrograms(UUID portfolioId, UUID tenantId) {
-        return projectRepository.findByTenantIdAndPortfolioId(tenantId, portfolioId).size();
+        return programRepository.findByTenantIdAndPortfolioId(tenantId, portfolioId).size();
     }
 }

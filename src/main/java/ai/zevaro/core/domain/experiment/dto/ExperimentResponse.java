@@ -3,7 +3,7 @@ package ai.zevaro.core.domain.experiment.dto;
 import ai.zevaro.core.domain.experiment.ExperimentStatus;
 import ai.zevaro.core.domain.experiment.ExperimentType;
 import ai.zevaro.core.domain.hypothesis.dto.HypothesisSummary;
-import ai.zevaro.core.domain.project.dto.ProjectSummary;
+import ai.zevaro.core.domain.program.dto.ProgramSummary;
 import ai.zevaro.core.domain.user.dto.UserSummary;
 
 import java.math.BigDecimal;
@@ -33,7 +33,7 @@ public record ExperimentResponse(
         BigDecimal controlValue,
         BigDecimal variantValue,
         BigDecimal confidenceLevel,
-        ProjectSummary project,
+        ProgramSummary program,
         HypothesisSummary hypothesis,
         UserSummary owner,
         Instant createdAt,

@@ -105,19 +105,19 @@ public interface DecisionRepository extends JpaRepository<Decision, UUID> {
     Double getAverageDecisionTimeHours(@Param("tenantId") UUID tenantId, @Param("since") Instant since);
 
     // Project-scoped queries
-    Page<Decision> findByTenantIdAndProjectId(UUID tenantId, UUID projectId, Pageable pageable);
+    Page<Decision> findByTenantIdAndProgramId(UUID tenantId, UUID projectId, Pageable pageable);
 
-    List<Decision> findByTenantIdAndProjectId(UUID tenantId, UUID projectId);
+    List<Decision> findByTenantIdAndProgramId(UUID tenantId, UUID projectId);
 
-    List<Decision> findByTenantIdAndProjectIdAndStatus(UUID tenantId, UUID projectId, DecisionStatus status);
+    List<Decision> findByTenantIdAndProgramIdAndStatus(UUID tenantId, UUID projectId, DecisionStatus status);
 
-    @Query("SELECT COUNT(d) FROM Decision d WHERE d.tenantId = :tenantId AND d.project.id = :projectId")
+    @Query("SELECT COUNT(d) FROM Decision d WHERE d.tenantId = :tenantId AND d.program.id = :projectId")
     long countByTenantIdAndProjectId(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
 
-    @Query("SELECT COUNT(d) FROM Decision d WHERE d.tenantId = :tenantId AND d.project.id = :projectId AND d.status = :status")
+    @Query("SELECT COUNT(d) FROM Decision d WHERE d.tenantId = :tenantId AND d.program.id = :projectId AND d.status = :status")
     long countByTenantIdAndProjectIdAndStatus(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId, @Param("status") DecisionStatus status);
 
-    @Query("SELECT d.status, COUNT(d) FROM Decision d WHERE d.tenantId = :tenantId AND d.project.id = :projectId GROUP BY d.status")
+    @Query("SELECT d.status, COUNT(d) FROM Decision d WHERE d.tenantId = :tenantId AND d.program.id = :projectId GROUP BY d.status")
     List<Object[]> countByStatusForProject(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
 
     // For dashboard - SLA breached decisions
@@ -145,6 +145,6 @@ public interface DecisionRepository extends JpaRepository<Decision, UUID> {
     long countDecisionsCompletedThisMonth(@Param("tenantId") UUID tenantId, @Param("userId") UUID userId);
 
     // Portfolio-scoped queries
-    @Query("SELECT d FROM Decision d WHERE d.tenantId = :tenantId AND d.project.id IN :projectIds")
+    @Query("SELECT d FROM Decision d WHERE d.tenantId = :tenantId AND d.program.id IN :projectIds")
     List<Decision> findByTenantIdAndProjectIdIn(@Param("tenantId") UUID tenantId, @Param("projectIds") List<UUID> projectIds);
 }

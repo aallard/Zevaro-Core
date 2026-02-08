@@ -32,5 +32,5 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
     List<Team> findByMemberUserId(@Param("userId") UUID userId, @Param("tenantId") UUID tenantId);
 
     // Project-scoped queries
-    List<Team> findByTenantIdAndProjectId(UUID tenantId, UUID projectId);
+    List<Team> findByTenantIdAndProgramId(UUID tenantId, UUID projectId);
 }

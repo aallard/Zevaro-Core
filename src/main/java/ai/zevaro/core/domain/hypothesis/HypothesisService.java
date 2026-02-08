@@ -7,8 +7,8 @@ import ai.zevaro.core.domain.hypothesis.dto.TransitionHypothesisRequest;
 import ai.zevaro.core.domain.hypothesis.dto.UpdateHypothesisRequest;
 import ai.zevaro.core.domain.outcome.Outcome;
 import ai.zevaro.core.domain.outcome.OutcomeRepository;
-import ai.zevaro.core.domain.project.Project;
-import ai.zevaro.core.domain.project.ProjectRepository;
+import ai.zevaro.core.domain.program.Program;
+import ai.zevaro.core.domain.program.ProgramRepository;
 import ai.zevaro.core.domain.user.User;
 import ai.zevaro.core.domain.user.UserRepository;
 import ai.zevaro.core.event.EventPublisher;
@@ -36,7 +36,7 @@ public class HypothesisService {
 
     private final HypothesisRepository hypothesisRepository;
     private final OutcomeRepository outcomeRepository;
-    private final ProjectRepository projectRepository;
+    private final ProgramRepository programRepository;
     private final UserRepository userRepository;
     private final HypothesisMapper hypothesisMapper;
     private final ObjectMapper objectMapper;
@@ -65,7 +65,7 @@ public class HypothesisService {
         List<Hypothesis> hypotheses;
 
         if (projectId != null) {
-            hypotheses = hypothesisRepository.findByTenantIdAndProjectId(tenantId, projectId);
+            hypotheses = hypothesisRepository.findByTenantIdAndProgramId(tenantId, projectId);
         } else if (status != null) {
             hypotheses = hypothesisRepository.findByTenantIdAndStatus(tenantId, status);
         } else if (outcomeId != null) {
@@ -86,7 +86,7 @@ public class HypothesisService {
         Page<Hypothesis> hypotheses;
 
         if (projectId != null) {
-            hypotheses = hypothesisRepository.findByTenantIdAndProjectId(tenantId, projectId, pageable);
+            hypotheses = hypothesisRepository.findByTenantIdAndProgramId(tenantId, projectId, pageable);
         } else if (status != null) {
             hypotheses = hypothesisRepository.findByTenantIdAndStatus(tenantId, status, pageable);
         } else if (priority != null) {
@@ -114,7 +114,7 @@ public class HypothesisService {
 
     @Transactional(readOnly = true)
     public List<HypothesisResponse> getHypothesesForProject(UUID projectId, UUID tenantId) {
-        return hypothesisRepository.findByTenantIdAndProjectId(tenantId, projectId).stream()
+        return hypothesisRepository.findByTenantIdAndProgramId(tenantId, projectId).stream()
                 .map(hypothesisMapper::toResponse)
                 .toList();
     }
@@ -149,9 +149,9 @@ public class HypothesisService {
         hypothesis.setOutcome(outcome);
 
         if (request.projectId() != null) {
-            Project project = projectRepository.findByIdAndTenantId(request.projectId(), tenantId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Project", "id", request.projectId()));
-            hypothesis.setProject(project);
+            Program program = programRepository.findByIdAndTenantId(request.projectId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Program", "id", request.projectId()));
+            hypothesis.setProgram(program);
         }
 
         if (request.ownerId() != null) {

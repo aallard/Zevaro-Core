@@ -4,7 +4,7 @@ import ai.zevaro.core.domain.outcome.dto.CreateOutcomeRequest;
 import ai.zevaro.core.domain.outcome.dto.OutcomeResponse;
 import ai.zevaro.core.domain.outcome.dto.OutcomeSummary;
 import ai.zevaro.core.domain.outcome.dto.UpdateOutcomeRequest;
-import ai.zevaro.core.domain.project.ProjectMapper;
+import ai.zevaro.core.domain.program.ProgramMapper;
 import ai.zevaro.core.domain.team.TeamMapper;
 import ai.zevaro.core.domain.user.UserMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -25,7 +25,7 @@ public class OutcomeMapper {
 
     private final ObjectMapper objectMapper;
     private final TeamMapper teamMapper;
-    private final ProjectMapper projectMapper;
+    private final ProgramMapper programMapper;
     private final UserMapper userMapper;
 
     public OutcomeResponse toResponse(Outcome outcome, int hypothesisCount) {
@@ -44,7 +44,7 @@ public class OutcomeMapper {
                 outcome.getPriority(),
                 outcome.getTeam() != null ? teamMapper.toSummary(outcome.getTeam()) : null,
                 outcome.getOwner() != null ? userMapper.toSummary(outcome.getOwner()) : null,
-                outcome.getProject() != null ? projectMapper.toSummary(outcome.getProject()) : null,
+                outcome.getProgram() != null ? programMapper.toSummary(outcome.getProgram()) : null,
                 outcome.getTargetDate(),
                 outcome.getStartedAt(),
                 outcome.getValidatedAt(),

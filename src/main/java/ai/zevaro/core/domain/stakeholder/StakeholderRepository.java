@@ -53,5 +53,5 @@ public interface StakeholderRepository extends JpaRepository<Stakeholder, UUID> 
     void incrementEscalatedDecisions(@Param("id") UUID id);
 
     // Project-scoped queries
-    List<Stakeholder> findByTenantIdAndProjectId(UUID tenantId, UUID projectId);
+    List<Stakeholder> findByTenantIdAndProgramId(UUID tenantId, UUID projectId);
 }

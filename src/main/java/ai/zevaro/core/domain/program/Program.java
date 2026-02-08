@@ -1,4 +1,4 @@
-package ai.zevaro.core.domain.project;
+package ai.zevaro.core.domain.program;
 
 import ai.zevaro.core.domain.user.User;
 import jakarta.persistence.Column;
@@ -23,12 +23,15 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
 @Table(name = "projects", indexes = {
         @Index(name = "idx_project_tenant_status", columnList = "tenant_id, status"),
-        @Index(name = "idx_project_portfolio", columnList = "portfolio_id")
+        @Index(name = "idx_project_portfolio", columnList = "portfolio_id"),
+        @Index(name = "idx_projects_portfolio", columnList = "tenant_id, portfolio_id"),
+        @Index(name = "idx_projects_type", columnList = "tenant_id, type")
 },
 uniqueConstraints = {
         @UniqueConstraint(columnNames = {"tenant_id", "slug"})
@@ -37,7 +40,7 @@ uniqueConstraints = {
 @Getter
 @Setter
 @NoArgsConstructor
-public class Project {
+public class Program {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -57,7 +60,14 @@ public class Project {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ProjectStatus status = ProjectStatus.ACTIVE;
+    private ProgramStatus status = ProgramStatus.ACTIVE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type")
+    private ProgramType type;
+
+    @Column(name = "portfolio_id")
+    private UUID portfolioId;
 
     @Column(length = 7)
     private String color;
@@ -69,6 +79,15 @@ public class Project {
     @Column(name = "icon_url")
     private String iconUrl;
 
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "target_date")
+    private LocalDate targetDate;
+
+    @Column(name = "tags", columnDefinition = "text")
+    private String tags;
+
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
@@ -79,7 +98,4 @@ public class Project {
 
     @Column(name = "created_by_id")
     private UUID createdById;
-
-    @Column(name = "portfolio_id")
-    private UUID portfolioId;
 }

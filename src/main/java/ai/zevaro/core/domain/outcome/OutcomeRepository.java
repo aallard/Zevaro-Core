@@ -60,26 +60,26 @@ public interface OutcomeRepository extends JpaRepository<Outcome, UUID> {
     List<Object[]> countByStatusForTenant(@Param("tenantId") UUID tenantId);
 
     // Project-scoped queries
-    Page<Outcome> findByTenantIdAndProjectId(UUID tenantId, UUID projectId, Pageable pageable);
+    Page<Outcome> findByTenantIdAndProgramId(UUID tenantId, UUID projectId, Pageable pageable);
 
-    List<Outcome> findByTenantIdAndProjectId(UUID tenantId, UUID projectId);
+    List<Outcome> findByTenantIdAndProgramId(UUID tenantId, UUID projectId);
 
-    List<Outcome> findByTenantIdAndProjectIdAndStatus(UUID tenantId, UUID projectId, OutcomeStatus status);
+    List<Outcome> findByTenantIdAndProgramIdAndStatus(UUID tenantId, UUID projectId, OutcomeStatus status);
 
-    @Query("SELECT COUNT(o) FROM Outcome o WHERE o.tenantId = :tenantId AND o.project.id = :projectId")
+    @Query("SELECT COUNT(o) FROM Outcome o WHERE o.tenantId = :tenantId AND o.program.id = :projectId")
     long countByTenantIdAndProjectId(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
 
-    @Query("SELECT COUNT(o) FROM Outcome o WHERE o.tenantId = :tenantId AND o.project.id = :projectId AND o.status = :status")
+    @Query("SELECT COUNT(o) FROM Outcome o WHERE o.tenantId = :tenantId AND o.program.id = :projectId AND o.status = :status")
     long countByTenantIdAndProjectIdAndStatus(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId, @Param("status") OutcomeStatus status);
 
-    @Query("SELECT o.status, COUNT(o) FROM Outcome o WHERE o.tenantId = :tenantId AND o.project.id = :projectId GROUP BY o.status")
+    @Query("SELECT o.status, COUNT(o) FROM Outcome o WHERE o.tenantId = :tenantId AND o.program.id = :projectId GROUP BY o.status")
     List<Object[]> countByStatusForProject(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
 
     // For dashboard - count validated outcomes
-    @Query("SELECT COUNT(o) FROM Outcome o WHERE o.tenantId = :tenantId AND o.project.id = :projectId AND o.status = 'VALIDATED'")
+    @Query("SELECT COUNT(o) FROM Outcome o WHERE o.tenantId = :tenantId AND o.program.id = :projectId AND o.status = 'VALIDATED'")
     long countValidatedForProject(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
 
     // For dashboard - count non-draft outcomes
-    @Query("SELECT COUNT(o) FROM Outcome o WHERE o.tenantId = :tenantId AND o.project.id = :projectId AND o.status != 'DRAFT'")
+    @Query("SELECT COUNT(o) FROM Outcome o WHERE o.tenantId = :tenantId AND o.program.id = :projectId AND o.status != 'DRAFT'")
     long countNonDraftForProject(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
 }

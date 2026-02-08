@@ -1,4 +1,4 @@
-package ai.zevaro.core.domain.project;
+package ai.zevaro.core.domain.program;
 
 import ai.zevaro.core.domain.decision.DecisionRepository;
 import ai.zevaro.core.domain.experiment.ExperimentRepository;
@@ -11,15 +11,15 @@ import ai.zevaro.core.domain.decision.DecisionStatus;
 import ai.zevaro.core.domain.outcome.KeyResult;
 import ai.zevaro.core.domain.outcome.Outcome;
 import ai.zevaro.core.domain.outcome.OutcomeStatus;
-import ai.zevaro.core.domain.project.dto.CreateProjectRequest;
-import ai.zevaro.core.domain.project.dto.ProjectDashboardResponse;
-import ai.zevaro.core.domain.project.dto.ProjectDashboardResponse.ActivityItem;
-import ai.zevaro.core.domain.project.dto.ProjectDashboardResponse.DecisionQueueItem;
-import ai.zevaro.core.domain.project.dto.ProjectDashboardResponse.DailyMetric;
-import ai.zevaro.core.domain.project.dto.ProjectDashboardResponse.OutcomeProgressItem;
-import ai.zevaro.core.domain.project.dto.ProjectResponse;
-import ai.zevaro.core.domain.project.dto.ProjectStatsResponse;
-import ai.zevaro.core.domain.project.dto.UpdateProjectRequest;
+import ai.zevaro.core.domain.program.dto.CreateProgramRequest;
+import ai.zevaro.core.domain.program.dto.ProgramDashboardResponse;
+import ai.zevaro.core.domain.program.dto.ProgramDashboardResponse.ActivityItem;
+import ai.zevaro.core.domain.program.dto.ProgramDashboardResponse.DecisionQueueItem;
+import ai.zevaro.core.domain.program.dto.ProgramDashboardResponse.DailyMetric;
+import ai.zevaro.core.domain.program.dto.ProgramDashboardResponse.OutcomeProgressItem;
+import ai.zevaro.core.domain.program.dto.ProgramResponse;
+import ai.zevaro.core.domain.program.dto.ProgramStatsResponse;
+import ai.zevaro.core.domain.program.dto.UpdateProgramRequest;
 import ai.zevaro.core.domain.user.User;
 import ai.zevaro.core.domain.user.UserRepository;
 import ai.zevaro.core.event.EventPublisher;
@@ -44,126 +44,126 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class ProjectService {
+public class ProgramService {
 
-    private final ProjectRepository projectRepository;
+    private final ProgramRepository programRepository;
     private final OutcomeRepository outcomeRepository;
     private final HypothesisRepository hypothesisRepository;
     private final DecisionRepository decisionRepository;
     private final ExperimentRepository experimentRepository;
     private final UserRepository userRepository;
-    private final ProjectMapper projectMapper;
+    private final ProgramMapper programMapper;
     private final EventPublisher eventPublisher;
     private final AuditLogRepository auditLogRepository;
 
     @Transactional(readOnly = true)
-    public List<ProjectResponse> getProjects(UUID tenantId, ProjectStatus status) {
-        List<Project> projects;
+    public List<ProgramResponse> getPrograms(UUID tenantId, ProgramStatus status) {
+        List<Program> programs;
 
         if (status != null) {
-            projects = projectRepository.findByTenantIdAndStatus(tenantId, status);
+            programs = programRepository.findByTenantIdAndStatus(tenantId, status);
         } else {
-            projects = projectRepository.findByTenantId(tenantId);
+            programs = programRepository.findByTenantId(tenantId);
         }
 
-        return projects.stream()
+        return programs.stream()
                 .map(this::toResponseWithCounts)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public Page<ProjectResponse> getProjectsPaged(UUID tenantId, ProjectStatus status, Pageable pageable) {
-        Page<Project> projects;
+    public Page<ProgramResponse> getProgramsPaged(UUID tenantId, ProgramStatus status, Pageable pageable) {
+        Page<Program> programs;
 
         if (status != null) {
-            projects = projectRepository.findByTenantIdAndStatus(tenantId, status, pageable);
+            programs = programRepository.findByTenantIdAndStatus(tenantId, status, pageable);
         } else {
-            projects = projectRepository.findByTenantId(tenantId, pageable);
+            programs = programRepository.findByTenantId(tenantId, pageable);
         }
 
-        return projects.map(this::toResponseWithCounts);
+        return programs.map(this::toResponseWithCounts);
     }
 
     @Transactional(readOnly = true)
-    public ProjectResponse getProjectById(UUID id, UUID tenantId) {
-        Project project = projectRepository.findByIdAndTenantIdWithDetails(id, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", id));
-        return toResponseWithCounts(project);
+    public ProgramResponse getProgramById(UUID id, UUID tenantId) {
+        Program program = programRepository.findByIdAndTenantIdWithDetails(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Program", "id", id));
+        return toResponseWithCounts(program);
     }
 
     @Transactional
-    public ProjectResponse createProject(UUID tenantId, CreateProjectRequest request, UUID createdById) {
-        Project project = projectMapper.toEntity(request, tenantId, createdById);
+    public ProgramResponse createProgram(UUID tenantId, CreateProgramRequest request, UUID createdById) {
+        Program program = programMapper.toEntity(request, tenantId, createdById);
 
         // Check slug uniqueness and generate unique slug if needed
-        String baseSlug = project.getSlug();
+        String baseSlug = program.getSlug();
         String finalSlug = baseSlug;
         int counter = 2;
 
-        while (projectRepository.findBySlugAndTenantId(finalSlug, tenantId).isPresent()) {
+        while (programRepository.findBySlugAndTenantId(finalSlug, tenantId).isPresent()) {
             finalSlug = baseSlug + "-" + counter;
             counter++;
         }
 
-        project.setSlug(finalSlug);
+        program.setSlug(finalSlug);
 
         if (request.ownerId() != null) {
             User owner = userRepository.findByIdAndTenantId(request.ownerId(), tenantId)
                     .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.ownerId()));
-            project.setOwner(owner);
+            program.setOwner(owner);
         }
 
-        project = projectRepository.save(project);
+        program = programRepository.save(program);
 
-        // TODO: Implement publishProjectCreated when EventPublisher method is added
-        // eventPublisher.publishProjectCreated(project, createdById);
+        // TODO: Implement publishProgramCreated when EventPublisher method is added
+        // eventPublisher.publishProgramCreated(program, createdById);
 
-        return toResponseWithCounts(project);
+        return toResponseWithCounts(program);
     }
 
     @Transactional
-    public ProjectResponse updateProject(UUID id, UUID tenantId, UpdateProjectRequest request) {
-        Project project = projectRepository.findByIdAndTenantId(id, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", id));
+    public ProgramResponse updateProgram(UUID id, UUID tenantId, UpdateProgramRequest request) {
+        Program program = programRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Program", "id", id));
 
-        projectMapper.updateEntity(project, request);
+        programMapper.updateEntity(program, request);
 
         if (request.ownerId() != null) {
             User owner = userRepository.findByIdAndTenantId(request.ownerId(), tenantId)
                     .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.ownerId()));
-            project.setOwner(owner);
+            program.setOwner(owner);
         }
 
-        project = projectRepository.save(project);
+        program = programRepository.save(program);
 
-        // TODO: Implement publishProjectUpdated when EventPublisher method is added
-        // eventPublisher.publishProjectUpdated(project);
+        // TODO: Implement publishProgramUpdated when EventPublisher method is added
+        // eventPublisher.publishProgramUpdated(program);
 
-        return toResponseWithCounts(project);
+        return toResponseWithCounts(program);
     }
 
     @Transactional
-    public void deleteProject(UUID id, UUID tenantId) {
-        Project project = projectRepository.findByIdAndTenantId(id, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", id));
+    public void deleteProgram(UUID id, UUID tenantId) {
+        Program program = programRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Program", "id", id));
 
-        // Soft delete: archive the project
-        project.setStatus(ProjectStatus.ARCHIVED);
-        projectRepository.save(project);
+        // Soft delete: archive the program
+        program.setStatus(ProgramStatus.ARCHIVED);
+        programRepository.save(program);
     }
 
     @Transactional(readOnly = true)
-    public ProjectStatsResponse getProjectStats(UUID id, UUID tenantId) {
-        Project project = projectRepository.findByIdAndTenantId(id, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", id));
+    public ProgramStatsResponse getProgramStats(UUID id, UUID tenantId) {
+        Program program = programRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Program", "id", id));
 
         int pendingDecisionCount = (int) decisionRepository.countByTenantIdAndProjectIdAndStatus(
                 tenantId, id, ai.zevaro.core.domain.decision.DecisionStatus.NEEDS_INPUT);
-        int activeOutcomeCount = (int) outcomeRepository.findByTenantIdAndProjectIdAndStatus(
+        int activeOutcomeCount = (int) outcomeRepository.findByTenantIdAndProgramIdAndStatus(
                 tenantId, id, ai.zevaro.core.domain.outcome.OutcomeStatus.IN_PROGRESS).size();
         int totalHypothesisCount = (int) hypothesisRepository.countByTenantIdAndProjectId(tenantId, id);
 
-        return new ProjectStatsResponse(
+        return new ProgramStatsResponse(
                 pendingDecisionCount,
                 activeOutcomeCount,
                 0,
@@ -172,29 +172,29 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
-    public ProjectDashboardResponse getProjectDashboard(UUID projectId, UUID tenantId) {
-        Project project = projectRepository.findByIdAndTenantId(projectId, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
+    public ProgramDashboardResponse getProgramDashboard(UUID programId, UUID tenantId) {
+        Program program = programRepository.findByIdAndTenantId(programId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Program", "id", programId));
 
         // Count pending decisions
         int pendingDecisionCount = (int) decisionRepository.countByTenantIdAndProjectIdAndStatus(
-                tenantId, projectId, DecisionStatus.NEEDS_INPUT);
+                tenantId, programId, DecisionStatus.NEEDS_INPUT);
 
         // Count SLA breached decisions
-        List<Decision> slaBreachedDecisions = decisionRepository.findSlaBreachedForProject(tenantId, projectId);
+        List<Decision> slaBreachedDecisions = decisionRepository.findSlaBreachedForProject(tenantId, programId);
         int slaBreachedDecisionCount = slaBreachedDecisions.size();
 
         // Count active outcomes (IN_PROGRESS)
         int activeOutcomeCount = (int) outcomeRepository.countByTenantIdAndProjectIdAndStatus(
-                tenantId, projectId, OutcomeStatus.IN_PROGRESS);
+                tenantId, programId, OutcomeStatus.IN_PROGRESS);
 
         // Calculate outcome validation percentage
-        long validatedCount = outcomeRepository.countValidatedForProject(tenantId, projectId);
-        long totalNonDraftCount = outcomeRepository.countNonDraftForProject(tenantId, projectId);
+        long validatedCount = outcomeRepository.countValidatedForProject(tenantId, programId);
+        long totalNonDraftCount = outcomeRepository.countNonDraftForProject(tenantId, programId);
         double outcomeValidationPercentage = totalNonDraftCount > 0 ? (validatedCount * 100.0 / totalNonDraftCount) : 0;
 
         // Count running experiments
-        long runningExperimentCount = experimentRepository.countRunningForProject(tenantId, projectId);
+        long runningExperimentCount = experimentRepository.countRunningForProject(tenantId, programId);
 
         // Calculate average decision time
         Double avgDecisionTimeHours = decisionRepository.getAverageDecisionTimeHours(tenantId, Instant.now().minus(Duration.ofDays(30)));
@@ -211,7 +211,7 @@ public class ProjectService {
         double avgDecisionTimeTrend = avgDecisionTimeHours - previousAvgTime;
 
         // Get urgent decisions (top 5)
-        List<Decision> urgentDecisions = decisionRepository.findUrgentDecisionsForProject(tenantId, projectId);
+        List<Decision> urgentDecisions = decisionRepository.findUrgentDecisionsForProject(tenantId, programId);
         List<DecisionQueueItem> decisionQueueItems = urgentDecisions.stream()
                 .map(d -> new DecisionQueueItem(
                     d.getId(),
@@ -226,7 +226,7 @@ public class ProjectService {
 
         // Build decision velocity (last 30 days)
         Instant since = Instant.now().minus(Duration.ofDays(30));
-        List<Object[]> dailyMetricsData = decisionRepository.findDailyMetricsForProject(tenantId, projectId, since);
+        List<Object[]> dailyMetricsData = decisionRepository.findDailyMetricsForProject(tenantId, programId, since);
         Map<LocalDate, DailyMetric> metricsMap = new HashMap<>();
         for (Object[] row : dailyMetricsData) {
             LocalDate date = ((java.sql.Date) row[0]).toLocalDate();
@@ -237,8 +237,8 @@ public class ProjectService {
         List<DailyMetric> decisionVelocity = new ArrayList<>(metricsMap.values());
 
         // Get outcome progress
-        List<Outcome> activeOutcomes = outcomeRepository.findByTenantIdAndProjectIdAndStatus(
-                tenantId, projectId, OutcomeStatus.IN_PROGRESS);
+        List<Outcome> activeOutcomes = outcomeRepository.findByTenantIdAndProgramIdAndStatus(
+                tenantId, programId, OutcomeStatus.IN_PROGRESS);
         List<OutcomeProgressItem> outcomeProgress = activeOutcomes.stream()
                 .map(o -> {
                     double progressPercent = 0;
@@ -272,7 +272,7 @@ public class ProjectService {
                 ))
                 .toList();
 
-        return new ProjectDashboardResponse(
+        return new ProgramDashboardResponse(
             pendingDecisionCount,
             slaBreachedDecisionCount,
             activeOutcomeCount,
@@ -287,12 +287,12 @@ public class ProjectService {
         );
     }
 
-    private ProjectResponse toResponseWithCounts(Project project) {
-        int decisionCount = (int) decisionRepository.countByTenantIdAndProjectId(project.getTenantId(), project.getId());
-        int outcomeCount = (int) outcomeRepository.countByTenantIdAndProjectId(project.getTenantId(), project.getId());
-        int hypothesisCount = (int) hypothesisRepository.countByTenantIdAndProjectId(project.getTenantId(), project.getId());
+    private ProgramResponse toResponseWithCounts(Program program) {
+        int decisionCount = (int) decisionRepository.countByTenantIdAndProjectId(program.getTenantId(), program.getId());
+        int outcomeCount = (int) outcomeRepository.countByTenantIdAndProjectId(program.getTenantId(), program.getId());
+        int hypothesisCount = (int) hypothesisRepository.countByTenantIdAndProjectId(program.getTenantId(), program.getId());
         int teamMemberCount = 0;
 
-        return projectMapper.toResponse(project, decisionCount, outcomeCount, hypothesisCount, teamMemberCount);
+        return programMapper.toResponse(program, decisionCount, outcomeCount, hypothesisCount, teamMemberCount);
     }
 }

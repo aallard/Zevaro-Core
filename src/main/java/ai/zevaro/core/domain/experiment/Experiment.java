@@ -1,7 +1,7 @@
 package ai.zevaro.core.domain.experiment;
 
 import ai.zevaro.core.domain.hypothesis.Hypothesis;
-import ai.zevaro.core.domain.project.Project;
+import ai.zevaro.core.domain.program.Program;
 import ai.zevaro.core.domain.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -48,7 +48,7 @@ public class Experiment {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
-    private Project project;
+    private Program program;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hypothesis_id")

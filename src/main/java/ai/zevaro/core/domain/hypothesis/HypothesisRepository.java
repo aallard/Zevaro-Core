@@ -60,16 +60,16 @@ public interface HypothesisRepository extends JpaRepository<Hypothesis, UUID> {
     boolean existsByOutcomeIdAndTenantId(UUID outcomeId, UUID tenantId);
 
     // Project-scoped queries
-    Page<Hypothesis> findByTenantIdAndProjectId(UUID tenantId, UUID projectId, Pageable pageable);
+    Page<Hypothesis> findByTenantIdAndProgramId(UUID tenantId, UUID projectId, Pageable pageable);
 
-    List<Hypothesis> findByTenantIdAndProjectId(UUID tenantId, UUID projectId);
+    List<Hypothesis> findByTenantIdAndProgramId(UUID tenantId, UUID projectId);
 
-    List<Hypothesis> findByTenantIdAndProjectIdAndStatus(UUID tenantId, UUID projectId, HypothesisStatus status);
+    List<Hypothesis> findByTenantIdAndProgramIdAndStatus(UUID tenantId, UUID projectId, HypothesisStatus status);
 
-    @Query("SELECT COUNT(h) FROM Hypothesis h WHERE h.tenantId = :tenantId AND h.project.id = :projectId")
+    @Query("SELECT COUNT(h) FROM Hypothesis h WHERE h.tenantId = :tenantId AND h.program.id = :projectId")
     long countByTenantIdAndProjectId(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
 
-    @Query("SELECT h.status, COUNT(h) FROM Hypothesis h WHERE h.tenantId = :tenantId AND h.project.id = :projectId GROUP BY h.status")
+    @Query("SELECT h.status, COUNT(h) FROM Hypothesis h WHERE h.tenantId = :tenantId AND h.program.id = :projectId GROUP BY h.status")
     List<Object[]> countByStatusForProject(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
 
     // For team workload - count hypotheses owned by user

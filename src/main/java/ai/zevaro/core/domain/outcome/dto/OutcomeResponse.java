@@ -2,7 +2,7 @@ package ai.zevaro.core.domain.outcome.dto;
 
 import ai.zevaro.core.domain.outcome.OutcomePriority;
 import ai.zevaro.core.domain.outcome.OutcomeStatus;
-import ai.zevaro.core.domain.project.dto.ProjectSummary;
+import ai.zevaro.core.domain.program.dto.ProgramSummary;
 import ai.zevaro.core.domain.team.dto.TeamSummary;
 import ai.zevaro.core.domain.user.dto.UserSummary;
 
@@ -23,7 +23,7 @@ public record OutcomeResponse(
         OutcomePriority priority,
         TeamSummary team,
         UserSummary owner,
-        ProjectSummary project,
+        ProgramSummary program,
         LocalDate targetDate,
         Instant startedAt,
         Instant validatedAt,

@@ -5,7 +5,7 @@ import ai.zevaro.core.domain.hypothesis.dto.HypothesisResponse;
 import ai.zevaro.core.domain.hypothesis.dto.HypothesisSummary;
 import ai.zevaro.core.domain.hypothesis.dto.UpdateHypothesisRequest;
 import ai.zevaro.core.domain.outcome.OutcomeMapper;
-import ai.zevaro.core.domain.project.ProjectMapper;
+import ai.zevaro.core.domain.program.ProgramMapper;
 import ai.zevaro.core.domain.user.UserMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -25,7 +25,7 @@ public class HypothesisMapper {
 
     private final ObjectMapper objectMapper;
     private final OutcomeMapper outcomeMapper;
-    private final ProjectMapper projectMapper;
+    private final ProgramMapper programMapper;
     private final UserMapper userMapper;
 
     public HypothesisResponse toResponse(Hypothesis hypothesis) {
@@ -36,7 +36,7 @@ public class HypothesisMapper {
         return new HypothesisResponse(
                 hypothesis.getId(),
                 hypothesis.getOutcome() != null ? outcomeMapper.toSummary(hypothesis.getOutcome()) : null,
-                hypothesis.getProject() != null ? projectMapper.toSummary(hypothesis.getProject()) : null,
+                hypothesis.getProgram() != null ? programMapper.toSummary(hypothesis.getProgram()) : null,
                 hypothesis.getTitle(),
                 hypothesis.getBelief(),
                 hypothesis.getExpectedResult(),
