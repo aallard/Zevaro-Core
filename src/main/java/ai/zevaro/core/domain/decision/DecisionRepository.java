@@ -13,7 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface DecisionRepository extends JpaRepository<Decision, UUID> {
+public interface DecisionRepository extends JpaRepository<Decision, UUID>, org.springframework.data.jpa.repository.JpaSpecificationExecutor<Decision> {
 
     Optional<Decision> findByIdAndTenantId(UUID id, UUID tenantId);
 

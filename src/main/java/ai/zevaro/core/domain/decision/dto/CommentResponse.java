@@ -5,6 +5,8 @@ import ai.zevaro.core.domain.user.dto.UserSummary;
 import java.time.Instant;
 import java.util.UUID;
 
+// Replaced by polymorphic Comment entity in domain/comment/. Will be removed after data migration in ZC-064.
+@Deprecated
 public record CommentResponse(
         UUID id,
         UserSummary author,

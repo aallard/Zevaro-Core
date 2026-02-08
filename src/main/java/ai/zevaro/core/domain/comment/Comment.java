@@ -1,16 +1,14 @@
-package ai.zevaro.core.domain.decision;
+package ai.zevaro.core.domain.comment;
 
-import ai.zevaro.core.domain.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
-import jakarta.persistence.FetchType;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,41 +20,41 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.Instant;
 import java.util.UUID;
 
-// Replaced by polymorphic Comment entity in domain/comment/. Will be removed after data migration in ZC-064.
-@Deprecated
 @Entity
-@Table(name = "decision_comments", indexes = {
-        @Index(name = "idx_decision_comment_decision", columnList = "decision_id")
+@Table(name = "comments", indexes = {
+        @Index(name = "idx_comments_tenant_parent", columnList = "tenant_id, parent_type, parent_id"),
+        @Index(name = "idx_comments_parent_comment", columnList = "parent_comment_id")
 })
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
-public class DecisionComment {
+public class Comment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "decision_id", nullable = false)
-    private Decision decision;
+    @Column(name = "tenant_id", nullable = false)
+    private UUID tenantId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_id", nullable = false)
-    private User author;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "parent_type", nullable = false)
+    private CommentParentType parentType;
+
+    @Column(name = "parent_id", nullable = false)
+    private UUID parentId;
+
+    @Column(name = "author_id", nullable = false)
+    private UUID authorId;
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    private String content;
+    private String body;
 
-    @Column(name = "option_id")
-    private String optionId;
+    @Column(name = "parent_comment_id")
+    private UUID parentCommentId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id")
-    private DecisionComment parent;
-
-    @Column(name = "is_edited")
+    @Column(nullable = false)
     private boolean edited = false;
 
     @CreatedDate

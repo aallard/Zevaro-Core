@@ -104,6 +104,12 @@ public class DecisionController {
             @RequestParam(required = false) DecisionType type,
             @RequestParam(required = false) UUID teamId,
             @RequestParam(required = false) UUID projectId,
+            @RequestParam(required = false) UUID programId,
+            @RequestParam(required = false) UUID workstreamId,
+            @RequestParam(required = false) DecisionParentType parentType,
+            @RequestParam(required = false) String executionMode,
+            @RequestParam(required = false) String slaStatus,
+            @RequestParam(required = false) UUID portfolioId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
@@ -113,6 +119,14 @@ public class DecisionController {
                 ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, Math.min(size, 100), sort);
+
+        if (programId != null || workstreamId != null || parentType != null
+                || executionMode != null || slaStatus != null || portfolioId != null) {
+            return ResponseEntity.ok(decisionService.listFiltered(
+                    user.getTenantId(), programId, workstreamId, parentType,
+                    executionMode, slaStatus, portfolioId, pageable));
+        }
+
         return ResponseEntity.ok(decisionService.getDecisionsPaged(
                 user.getTenantId(), status, priority, type, teamId, projectId, pageable));
     }

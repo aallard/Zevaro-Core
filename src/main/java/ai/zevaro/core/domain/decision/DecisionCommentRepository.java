@@ -6,6 +6,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.UUID;
 
+// Replaced by polymorphic Comment entity in domain/comment/. Will be removed after data migration in ZC-064.
+@Deprecated
 @Repository
 public interface DecisionCommentRepository extends JpaRepository<DecisionComment, UUID> {
 
