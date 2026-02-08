@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Component
 @Order(1)
@@ -20,14 +21,9 @@ public class PermissionDataLoader implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (permissionRepository.count() > 0) {
-            log.info("Permissions already exist, skipping initialization");
-            return;
-        }
+        log.info("Checking permissions...");
 
-        log.info("Initializing permissions...");
-
-        List<Permission> permissions = List.of(
+        List<Permission> allPermissions = List.of(
                 // Project permissions
                 new Permission("project:read", "Read Projects", "View projects", "PROJECT"),
                 new Permission("project:create", "Create Projects", "Create new projects", "PROJECT"),
@@ -104,10 +100,90 @@ public class PermissionDataLoader implements CommandLineRunner {
                 new Permission("system:admin", "System Administration", "Full system access", "SYSTEM"),
                 new Permission("system:settings", "System Settings", "Manage system settings", "SYSTEM"),
                 new Permission("system:audit_read", "Read Audit Logs", "View audit logs", "SYSTEM"),
-                new Permission("system:tenant_manage", "Manage Tenant", "Manage tenant settings", "SYSTEM")
+                new Permission("system:tenant_manage", "Manage Tenant", "Manage tenant settings", "SYSTEM"),
+
+                // Portfolio permissions
+                new Permission("portfolio:read", "Read Portfolios", "View portfolios", "PORTFOLIO"),
+                new Permission("portfolio:create", "Create Portfolios", "Create new portfolios", "PORTFOLIO"),
+                new Permission("portfolio:update", "Update Portfolios", "Modify existing portfolios", "PORTFOLIO"),
+                new Permission("portfolio:delete", "Delete Portfolios", "Remove portfolios", "PORTFOLIO"),
+
+                // Workstream permissions
+                new Permission("workstream:read", "Read Workstreams", "View workstreams", "WORKSTREAM"),
+                new Permission("workstream:create", "Create Workstreams", "Create new workstreams", "WORKSTREAM"),
+                new Permission("workstream:update", "Update Workstreams", "Modify existing workstreams", "WORKSTREAM"),
+                new Permission("workstream:delete", "Delete Workstreams", "Remove workstreams", "WORKSTREAM"),
+
+                // Specification permissions
+                new Permission("specification:read", "Read Specifications", "View specifications", "SPECIFICATION"),
+                new Permission("specification:create", "Create Specifications", "Create new specifications", "SPECIFICATION"),
+                new Permission("specification:update", "Update Specifications", "Modify existing specifications", "SPECIFICATION"),
+                new Permission("specification:delete", "Delete Specifications", "Remove specifications", "SPECIFICATION"),
+                new Permission("specification:approve", "Approve Specifications", "Approve specifications", "SPECIFICATION"),
+
+                // Requirement permissions
+                new Permission("requirement:read", "Read Requirements", "View requirements", "REQUIREMENT"),
+                new Permission("requirement:create", "Create Requirements", "Create new requirements", "REQUIREMENT"),
+                new Permission("requirement:update", "Update Requirements", "Modify existing requirements", "REQUIREMENT"),
+                new Permission("requirement:delete", "Delete Requirements", "Remove requirements", "REQUIREMENT"),
+
+                // Ticket permissions
+                new Permission("ticket:read", "Read Tickets", "View tickets", "TICKET"),
+                new Permission("ticket:create", "Create Tickets", "Create new tickets", "TICKET"),
+                new Permission("ticket:update", "Update Tickets", "Modify existing tickets", "TICKET"),
+                new Permission("ticket:delete", "Delete Tickets", "Remove tickets", "TICKET"),
+                new Permission("ticket:assign", "Assign Tickets", "Assign tickets to users", "TICKET"),
+                new Permission("ticket:close", "Close Tickets", "Close resolved tickets", "TICKET"),
+
+                // Space permissions
+                new Permission("space:read", "Read Spaces", "View spaces", "SPACE"),
+                new Permission("space:create", "Create Spaces", "Create new spaces", "SPACE"),
+                new Permission("space:update", "Update Spaces", "Modify existing spaces", "SPACE"),
+                new Permission("space:delete", "Delete Spaces", "Remove spaces", "SPACE"),
+
+                // Document permissions
+                new Permission("document:read", "Read Documents", "View documents", "DOCUMENT"),
+                new Permission("document:create", "Create Documents", "Create new documents", "DOCUMENT"),
+                new Permission("document:update", "Update Documents", "Modify existing documents", "DOCUMENT"),
+                new Permission("document:delete", "Delete Documents", "Remove documents", "DOCUMENT"),
+                new Permission("document:publish", "Publish Documents", "Publish documents", "DOCUMENT"),
+
+                // Attachment permissions
+                new Permission("attachment:read", "Read Attachments", "View attachments", "ATTACHMENT"),
+                new Permission("attachment:create", "Create Attachments", "Upload attachments", "ATTACHMENT"),
+                new Permission("attachment:delete", "Delete Attachments", "Remove attachments", "ATTACHMENT"),
+
+                // Comment permissions
+                new Permission("comment:read", "Read Comments", "View comments", "COMMENT"),
+                new Permission("comment:create", "Create Comments", "Create new comments", "COMMENT"),
+                new Permission("comment:update", "Update Comments", "Modify existing comments", "COMMENT"),
+                new Permission("comment:delete", "Delete Comments", "Remove comments", "COMMENT"),
+
+                // Template permissions
+                new Permission("template:read", "Read Templates", "View templates", "TEMPLATE"),
+                new Permission("template:create", "Create Templates", "Create new templates", "TEMPLATE"),
+                new Permission("template:update", "Update Templates", "Modify existing templates", "TEMPLATE"),
+                new Permission("template:delete", "Delete Templates", "Remove templates", "TEMPLATE"),
+
+                // Queue permissions
+                new Permission("queue:read", "Read Queues", "View queues", "QUEUE"),
+                new Permission("queue:create", "Create Queues", "Create new queues", "QUEUE"),
+                new Permission("queue:update", "Update Queues", "Modify existing queues", "QUEUE"),
+                new Permission("queue:delete", "Delete Queues", "Remove queues", "QUEUE")
         );
 
-        permissionRepository.saveAll(permissions);
-        log.info("Created {} permissions", permissions.size());
+        Set<String> existingCodes = new java.util.HashSet<>();
+        permissionRepository.findAll().forEach(p -> existingCodes.add(p.getCode()));
+
+        List<Permission> newPermissions = allPermissions.stream()
+                .filter(p -> !existingCodes.contains(p.getCode()))
+                .toList();
+
+        if (newPermissions.isEmpty()) {
+            log.info("All {} permissions already exist", allPermissions.size());
+        } else {
+            permissionRepository.saveAll(newPermissions);
+            log.info("Created {} new permissions (total defined: {})", newPermissions.size(), allPermissions.size());
+        }
     }
 }

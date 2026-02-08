@@ -15,6 +15,7 @@ import ai.zevaro.core.domain.user.UserRepository;
 import ai.zevaro.core.domain.workstream.Workstream;
 import ai.zevaro.core.domain.workstream.WorkstreamMode;
 import ai.zevaro.core.domain.workstream.WorkstreamRepository;
+import ai.zevaro.core.event.EventPublisher;
 import ai.zevaro.core.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -38,6 +39,7 @@ public class TicketService {
     private final UserRepository userRepository;
     private final TicketMapper ticketMapper;
     private final AuditService auditService;
+    private final EventPublisher eventPublisher;
 
     private static final Map<TicketStatus, Set<TicketStatus>> ALLOWED_TRANSITIONS = Map.of(
             TicketStatus.NEW, Set.of(TicketStatus.TRIAGED, TicketStatus.WONT_FIX),
@@ -78,6 +80,8 @@ public class TicketService {
                 .action(AuditAction.CREATE)
                 .entity("TICKET", ticket.getId(), ticket.getIdentifier())
                 .description("Created ticket: " + ticket.getIdentifier() + " - " + ticket.getTitle()));
+
+        eventPublisher.publishTicketCreated(ticket, userId);
 
         return buildResponse(ticket);
     }
@@ -197,6 +201,8 @@ public class TicketService {
                 .entity("TICKET", ticket.getId(), ticket.getIdentifier())
                 .description("Assigned ticket: " + ticket.getIdentifier() + " to " + assignedToId));
 
+        eventPublisher.publishTicketAssigned(ticket, userId);
+
         return buildResponse(ticket);
     }
 
@@ -258,6 +264,8 @@ public class TicketService {
                 .action(AuditAction.UPDATE)
                 .entity("TICKET", ticket.getId(), ticket.getIdentifier())
                 .description("Resolved ticket: " + ticket.getIdentifier() + " resolution=" + req.resolution()));
+
+        eventPublisher.publishTicketResolved(ticket, userId);
 
         return buildResponse(ticket);
     }

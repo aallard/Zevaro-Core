@@ -112,4 +112,76 @@ public class KafkaConfig {
     public NewTopic auditEventsTopic() {
         return TopicBuilder.name(KafkaTopics.AUDIT_EVENTS).partitions(3).replicas(1).build();
     }
+
+    // Program topics
+    @Bean
+    public NewTopic programCreatedTopic() {
+        return TopicBuilder.name(KafkaTopics.PROGRAM_CREATED).partitions(3).replicas(1).build();
+    }
+
+    @Bean
+    public NewTopic programStatusChangedTopic() {
+        return TopicBuilder.name(KafkaTopics.PROGRAM_STATUS_CHANGED).partitions(3).replicas(1).build();
+    }
+
+    // Workstream topics
+    @Bean
+    public NewTopic workstreamCreatedTopic() {
+        return TopicBuilder.name(KafkaTopics.WORKSTREAM_CREATED).partitions(3).replicas(1).build();
+    }
+
+    @Bean
+    public NewTopic workstreamStatusChangedTopic() {
+        return TopicBuilder.name(KafkaTopics.WORKSTREAM_STATUS_CHANGED).partitions(3).replicas(1).build();
+    }
+
+    // Specification topics
+    @Bean
+    public NewTopic specificationCreatedTopic() {
+        return TopicBuilder.name(KafkaTopics.SPECIFICATION_CREATED).partitions(3).replicas(1).build();
+    }
+
+    @Bean
+    public NewTopic specificationStatusChangedTopic() {
+        return TopicBuilder.name(KafkaTopics.SPECIFICATION_STATUS_CHANGED).partitions(3).replicas(1).build();
+    }
+
+    @Bean
+    public NewTopic specificationApprovedTopic() {
+        return TopicBuilder.name(KafkaTopics.SPECIFICATION_APPROVED).partitions(3).replicas(1).build();
+    }
+
+    // Requirement topics
+    @Bean
+    public NewTopic requirementStatusChangedTopic() {
+        return TopicBuilder.name(KafkaTopics.REQUIREMENT_STATUS_CHANGED).partitions(3).replicas(1).build();
+    }
+
+    // Ticket topics
+    @Bean
+    public NewTopic ticketCreatedTopic() {
+        return TopicBuilder.name(KafkaTopics.TICKET_CREATED).partitions(3).replicas(1).build();
+    }
+
+    @Bean
+    public NewTopic ticketResolvedTopic() {
+        return TopicBuilder.name(KafkaTopics.TICKET_RESOLVED).partitions(3).replicas(1).build();
+    }
+
+    @Bean
+    public NewTopic ticketAssignedTopic() {
+        return TopicBuilder.name(KafkaTopics.TICKET_ASSIGNED).partitions(3).replicas(1).build();
+    }
+
+    // Document topics
+    @Bean
+    public NewTopic documentPublishedTopic() {
+        return TopicBuilder.name(KafkaTopics.DOCUMENT_PUBLISHED).partitions(3).replicas(1).build();
+    }
+
+    // Comment topics
+    @Bean
+    public NewTopic commentCreatedTopic() {
+        return TopicBuilder.name(KafkaTopics.COMMENT_CREATED).partitions(3).replicas(1).build();
+    }
 }

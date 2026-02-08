@@ -12,6 +12,7 @@ import ai.zevaro.core.domain.space.Space;
 import ai.zevaro.core.domain.space.SpaceRepository;
 import ai.zevaro.core.domain.user.User;
 import ai.zevaro.core.domain.user.UserRepository;
+import ai.zevaro.core.event.EventPublisher;
 import ai.zevaro.core.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,7 @@ public class DocumentService {
     private final UserRepository userRepository;
     private final DocumentMapper documentMapper;
     private final AuditService auditService;
+    private final EventPublisher eventPublisher;
 
     // --- CRUD ---
 
@@ -195,6 +197,8 @@ public class DocumentService {
                 .action(AuditAction.UPDATE)
                 .entity("DOCUMENT", doc.getId(), doc.getTitle())
                 .description("Published document: " + doc.getTitle() + " (version " + (doc.getVersion() - 1) + ")"));
+
+        eventPublisher.publishDocumentPublished(doc, userId);
 
         return toResponse(doc);
     }

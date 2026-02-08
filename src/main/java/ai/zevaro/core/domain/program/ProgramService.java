@@ -120,8 +120,7 @@ public class ProgramService {
         // Auto-create a PROGRAM-type Space for this program
         spaceService.createForProgram(program.getId(), program.getName(), tenantId, createdById);
 
-        // TODO: Implement publishProgramCreated when EventPublisher method is added
-        // eventPublisher.publishProgramCreated(program, createdById);
+        eventPublisher.publishProgramCreated(program, createdById);
 
         return toResponseWithCounts(program);
     }
@@ -139,10 +138,12 @@ public class ProgramService {
             program.setOwner(owner);
         }
 
+        String oldStatus = program.getStatus().name();
         program = programRepository.save(program);
 
-        // TODO: Implement publishProgramUpdated when EventPublisher method is added
-        // eventPublisher.publishProgramUpdated(program);
+        if (!oldStatus.equals(program.getStatus().name())) {
+            eventPublisher.publishProgramStatusChanged(program, oldStatus, null);
+        }
 
         return toResponseWithCounts(program);
     }

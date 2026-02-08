@@ -10,6 +10,7 @@ import ai.zevaro.core.domain.requirement.dto.RequirementResponse;
 import ai.zevaro.core.domain.requirement.dto.UpdateRequirementRequest;
 import ai.zevaro.core.domain.specification.Specification;
 import ai.zevaro.core.domain.specification.SpecificationRepository;
+import ai.zevaro.core.event.EventPublisher;
 import ai.zevaro.core.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,6 +30,7 @@ public class RequirementService {
     private final SpecificationRepository specificationRepository;
     private final RequirementMapper requirementMapper;
     private final AuditService auditService;
+    private final EventPublisher eventPublisher;
 
     // --- CRUD ---
 
@@ -85,6 +87,7 @@ public class RequirementService {
         Requirement requirement = requirementRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Requirement", "id", id));
 
+        String oldStatus = requirement.getStatus().name();
         requirementMapper.applyUpdate(requirement, req);
         requirement = requirementRepository.save(requirement);
 
@@ -94,6 +97,10 @@ public class RequirementService {
                 .action(AuditAction.UPDATE)
                 .entity("REQUIREMENT", requirement.getId(), requirement.getIdentifier())
                 .description("Updated requirement: " + requirement.getIdentifier()));
+
+        if (!oldStatus.equals(requirement.getStatus().name())) {
+            eventPublisher.publishRequirementStatusChanged(requirement, oldStatus, userId);
+        }
 
         return buildResponse(requirement);
     }

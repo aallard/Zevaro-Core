@@ -10,6 +10,7 @@ import ai.zevaro.core.domain.user.UserRepository;
 import ai.zevaro.core.domain.workstream.dto.CreateWorkstreamRequest;
 import ai.zevaro.core.domain.workstream.dto.UpdateWorkstreamRequest;
 import ai.zevaro.core.domain.workstream.dto.WorkstreamResponse;
+import ai.zevaro.core.event.EventPublisher;
 import ai.zevaro.core.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,6 +30,7 @@ public class WorkstreamService {
     private final UserRepository userRepository;
     private final WorkstreamMapper workstreamMapper;
     private final AuditService auditService;
+    private final EventPublisher eventPublisher;
 
     @Transactional
     public WorkstreamResponse create(UUID programId, CreateWorkstreamRequest request, UUID tenantId, UUID userId) {
@@ -48,6 +50,8 @@ public class WorkstreamService {
                 .action(AuditAction.CREATE)
                 .entity("WORKSTREAM", workstream.getId(), workstream.getName())
                 .description("Created workstream: " + workstream.getName()));
+
+        eventPublisher.publishWorkstreamCreated(workstream, userId);
 
         String ownerName = resolveOwnerName(workstream.getOwnerId(), tenantId);
         return workstreamMapper.toResponse(workstream, program.getName(), ownerName, 0);
@@ -111,6 +115,7 @@ public class WorkstreamService {
             }
         }
 
+        String oldStatus = workstream.getStatus().name();
         workstreamMapper.applyUpdate(workstream, request);
         workstream = workstreamRepository.save(workstream);
 
@@ -120,6 +125,10 @@ public class WorkstreamService {
                 .action(AuditAction.UPDATE)
                 .entity("WORKSTREAM", workstream.getId(), workstream.getName())
                 .description("Updated workstream: " + workstream.getName()));
+
+        if (!oldStatus.equals(workstream.getStatus().name())) {
+            eventPublisher.publishWorkstreamStatusChanged(workstream, oldStatus, userId);
+        }
 
         String programName = programRepository.findByIdAndTenantId(workstream.getProgramId(), tenantId)
                 .map(Program::getName)

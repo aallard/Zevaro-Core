@@ -24,14 +24,12 @@ public class RoleDataLoader implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (roleRepository.count() > 0) {
-            log.info("Roles already exist, skipping initialization");
-            return;
-        }
+        log.info("Checking system roles...");
 
-        log.info("Initializing system roles...");
+        Set<String> existingCodes = new HashSet<>();
+        roleRepository.findAll().forEach(r -> existingCodes.add(r.getCode()));
 
-        List<Role> roles = List.of(
+        List<Role> allRoles = List.of(
                 // System Roles
                 createRole("SUPER_ADMIN", "Super Administrator", "Full system access across all tenants", RoleCategory.SYSTEM, RoleLevel.L9_OWNER),
                 createRole("TENANT_OWNER", "Tenant Owner", "Highest tenant-level role with all permissions", RoleCategory.SYSTEM, RoleLevel.L9_OWNER),
@@ -94,22 +92,37 @@ public class RoleDataLoader implements CommandLineRunner {
                 // Stakeholder Roles
                 createRole("STAKEHOLDER_EXEC", "Executive Stakeholder", "Executive level stakeholder", RoleCategory.STAKEHOLDER, RoleLevel.L6_VP),
                 createRole("STAKEHOLDER", "Stakeholder", "Standard stakeholder", RoleCategory.STAKEHOLDER, RoleLevel.L3_LEAD),
-                createRole("VIEWER", "View Only", "Read-only access", RoleCategory.STAKEHOLDER, RoleLevel.L1_INDIVIDUAL)
+                createRole("VIEWER", "View Only", "Read-only access", RoleCategory.STAKEHOLDER, RoleLevel.L1_INDIVIDUAL),
+
+                // AI Agent Role
+                createRole("AI_AGENT", "AI Agent", "Automated AI agent with read-all, create-all, selective update", RoleCategory.SYSTEM, RoleLevel.L3_LEAD)
         );
 
-        // Assign permissions based on level
-        for (Role role : roles) {
-            if ("TENANT_OWNER".equals(role.getCode()) || "SUPER_ADMIN".equals(role.getCode())) {
-                role.setPermissions(new HashSet<>(permissionRepository.findAll()));
-            } else {
-                List<String> permissionCodes = permissionMapper.getPermissionsForLevel(role.getLevel(), role.getCategory());
-                Set<Permission> permissions = new HashSet<>(permissionRepository.findByCodeIn(permissionCodes));
-                role.setPermissions(permissions);
-            }
-        }
+        List<Role> newRoles = allRoles.stream()
+                .filter(r -> !existingCodes.contains(r.getCode()))
+                .toList();
 
-        roleRepository.saveAll(roles);
-        log.info("Created {} system roles", roles.size());
+        if (newRoles.isEmpty()) {
+            log.info("All {} roles already exist", allRoles.size());
+        } else {
+            // Assign permissions based on level
+            for (Role role : newRoles) {
+                if ("TENANT_OWNER".equals(role.getCode()) || "SUPER_ADMIN".equals(role.getCode())) {
+                    role.setPermissions(new HashSet<>(permissionRepository.findAll()));
+                } else if ("AI_AGENT".equals(role.getCode())) {
+                    List<String> permissionCodes = permissionMapper.getAiAgentPermissions();
+                    Set<Permission> permissions = new HashSet<>(permissionRepository.findByCodeIn(permissionCodes));
+                    role.setPermissions(permissions);
+                } else {
+                    List<String> permissionCodes = permissionMapper.getPermissionsForLevel(role.getLevel(), role.getCategory());
+                    Set<Permission> permissions = new HashSet<>(permissionRepository.findByCodeIn(permissionCodes));
+                    role.setPermissions(permissions);
+                }
+            }
+
+            roleRepository.saveAll(newRoles);
+            log.info("Created {} new roles (total defined: {})", newRoles.size(), allRoles.size());
+        }
     }
 
     private Role createRole(String code, String name, String description, RoleCategory category, RoleLevel level) {

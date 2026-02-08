@@ -23,6 +23,8 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
 
     Page<AuditLog> findByTenantIdAndActionOrderByTimestampDesc(UUID tenantId, AuditAction action, Pageable pageable);
 
+    Page<AuditLog> findByTenantIdAndEntityTypeOrderByTimestampDesc(UUID tenantId, String entityType, Pageable pageable);
+
     @Query("SELECT a FROM AuditLog a WHERE a.tenantId = :tenantId AND a.timestamp BETWEEN :start AND :end ORDER BY a.timestamp DESC")
     Page<AuditLog> findByTenantIdAndTimestampBetween(
             @Param("tenantId") UUID tenantId,

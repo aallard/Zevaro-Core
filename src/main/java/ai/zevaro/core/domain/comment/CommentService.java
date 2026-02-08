@@ -8,6 +8,7 @@ import ai.zevaro.core.domain.comment.dto.CreateCommentRequest;
 import ai.zevaro.core.domain.comment.dto.UpdateCommentRequest;
 import ai.zevaro.core.domain.user.User;
 import ai.zevaro.core.domain.user.UserRepository;
+import ai.zevaro.core.event.EventPublisher;
 import ai.zevaro.core.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,6 +27,7 @@ public class CommentService {
     private final UserRepository userRepository;
     private final CommentMapper commentMapper;
     private final AuditService auditService;
+    private final EventPublisher eventPublisher;
 
     @Transactional
     public CommentResponse create(CreateCommentRequest request, UUID tenantId, UUID userId) {
@@ -47,6 +49,8 @@ public class CommentService {
                 .action(AuditAction.CREATE)
                 .entity("Comment", comment.getId(), null)
                 .description("Comment created on " + request.parentType() + " " + request.parentId()));
+
+        eventPublisher.publishCommentCreated(comment, userId);
 
         return toResponse(comment);
     }

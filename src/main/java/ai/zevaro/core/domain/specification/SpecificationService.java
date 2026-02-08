@@ -16,6 +16,7 @@ import ai.zevaro.core.domain.user.UserRepository;
 import ai.zevaro.core.domain.workstream.Workstream;
 import ai.zevaro.core.domain.workstream.WorkstreamMode;
 import ai.zevaro.core.domain.workstream.WorkstreamRepository;
+import ai.zevaro.core.event.EventPublisher;
 import ai.zevaro.core.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +44,7 @@ public class SpecificationService {
     private final AuditService auditService;
     private final DocumentService documentService;
     private final SpaceRepository spaceRepository;
+    private final EventPublisher eventPublisher;
 
     private static final Map<SpecificationStatus, Set<SpecificationStatus>> VALID_TRANSITIONS = Map.of(
             SpecificationStatus.DRAFT, Set.of(SpecificationStatus.IN_REVIEW),
@@ -72,6 +74,8 @@ public class SpecificationService {
                 .action(AuditAction.CREATE)
                 .entity("SPECIFICATION", spec.getId(), spec.getName())
                 .description("Created specification: " + spec.getName()));
+
+        eventPublisher.publishSpecificationCreated(spec, userId);
 
         // Auto-create a SPECIFICATION Document in the Program's Space
         try {
@@ -170,6 +174,7 @@ public class SpecificationService {
         Specification spec = specificationRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Specification", "id", id));
 
+        String oldStatus = spec.getStatus().name();
         validateTransition(spec.getStatus(), SpecificationStatus.IN_REVIEW);
         spec.setStatus(SpecificationStatus.IN_REVIEW);
         spec = specificationRepository.save(spec);
@@ -181,6 +186,8 @@ public class SpecificationService {
                 .entity("SPECIFICATION", spec.getId(), spec.getName())
                 .description("Submitted specification for review: " + spec.getName()));
 
+        eventPublisher.publishSpecificationStatusChanged(spec, oldStatus, userId);
+
         return buildResponse(spec);
     }
 
@@ -189,6 +196,7 @@ public class SpecificationService {
         Specification spec = specificationRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Specification", "id", id));
 
+        String oldStatus = spec.getStatus().name();
         validateTransition(spec.getStatus(), SpecificationStatus.APPROVED);
         spec.setStatus(SpecificationStatus.APPROVED);
         spec.setApprovedAt(Instant.now());
@@ -202,6 +210,9 @@ public class SpecificationService {
                 .entity("SPECIFICATION", spec.getId(), spec.getName())
                 .description("Approved specification: " + spec.getName()));
 
+        eventPublisher.publishSpecificationStatusChanged(spec, oldStatus, userId);
+        eventPublisher.publishSpecificationApproved(spec, userId);
+
         return buildResponse(spec);
     }
 
@@ -210,6 +221,7 @@ public class SpecificationService {
         Specification spec = specificationRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Specification", "id", id));
 
+        String oldStatus = spec.getStatus().name();
         validateTransition(spec.getStatus(), SpecificationStatus.DRAFT);
         spec.setStatus(SpecificationStatus.DRAFT);
         spec.setApprovedAt(null);
@@ -223,6 +235,8 @@ public class SpecificationService {
                 .entity("SPECIFICATION", spec.getId(), spec.getName())
                 .description("Rejected specification: " + spec.getName()));
 
+        eventPublisher.publishSpecificationStatusChanged(spec, oldStatus, userId);
+
         return buildResponse(spec);
     }
 
@@ -231,6 +245,7 @@ public class SpecificationService {
         Specification spec = specificationRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Specification", "id", id));
 
+        String oldStatus = spec.getStatus().name();
         validateTransition(spec.getStatus(), SpecificationStatus.IN_PROGRESS);
         spec.setStatus(SpecificationStatus.IN_PROGRESS);
         spec = specificationRepository.save(spec);
@@ -242,6 +257,8 @@ public class SpecificationService {
                 .entity("SPECIFICATION", spec.getId(), spec.getName())
                 .description("Started work on specification: " + spec.getName()));
 
+        eventPublisher.publishSpecificationStatusChanged(spec, oldStatus, userId);
+
         return buildResponse(spec);
     }
 
@@ -250,6 +267,7 @@ public class SpecificationService {
         Specification spec = specificationRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Specification", "id", id));
 
+        String oldStatus = spec.getStatus().name();
         validateTransition(spec.getStatus(), SpecificationStatus.DELIVERED);
         spec.setStatus(SpecificationStatus.DELIVERED);
         spec = specificationRepository.save(spec);
@@ -261,6 +279,8 @@ public class SpecificationService {
                 .entity("SPECIFICATION", spec.getId(), spec.getName())
                 .description("Marked specification as delivered: " + spec.getName()));
 
+        eventPublisher.publishSpecificationStatusChanged(spec, oldStatus, userId);
+
         return buildResponse(spec);
     }
 
@@ -269,6 +289,7 @@ public class SpecificationService {
         Specification spec = specificationRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Specification", "id", id));
 
+        String oldStatus = spec.getStatus().name();
         validateTransition(spec.getStatus(), SpecificationStatus.ACCEPTED);
         spec.setStatus(SpecificationStatus.ACCEPTED);
         spec = specificationRepository.save(spec);
@@ -279,6 +300,8 @@ public class SpecificationService {
                 .action(AuditAction.UPDATE)
                 .entity("SPECIFICATION", spec.getId(), spec.getName())
                 .description("Accepted specification: " + spec.getName()));
+
+        eventPublisher.publishSpecificationStatusChanged(spec, oldStatus, userId);
 
         return buildResponse(spec);
     }
