@@ -1,5 +1,6 @@
 package ai.zevaro.core.domain.decision.dto;
 
+import ai.zevaro.core.domain.decision.DecisionParentType;
 import ai.zevaro.core.domain.decision.DecisionPriority;
 import ai.zevaro.core.domain.decision.DecisionType;
 import jakarta.validation.constraints.Max;
@@ -36,6 +37,9 @@ public record CreateDecisionRequest(
         UUID projectId,
         UUID queueId,
         UUID stakeholderId,
+        DecisionParentType parentType,
+        UUID parentId,
+        UUID workstreamId,
 
         @Min(value = 1, message = "SLA hours must be at least 1")
         @Max(value = 720, message = "SLA hours cannot exceed 720 (30 days)")

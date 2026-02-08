@@ -9,12 +9,19 @@ import ai.zevaro.core.domain.decision.dto.DecisionSummary;
 import ai.zevaro.core.domain.decision.dto.UpdateDecisionRequest;
 import ai.zevaro.core.domain.decision.dto.VoteResponse;
 import ai.zevaro.core.domain.hypothesis.HypothesisMapper;
+import ai.zevaro.core.domain.hypothesis.HypothesisRepository;
 import ai.zevaro.core.domain.outcome.OutcomeMapper;
 import ai.zevaro.core.domain.program.ProgramMapper;
+import ai.zevaro.core.domain.program.ProgramRepository;
 import ai.zevaro.core.domain.queue.DecisionQueueMapper;
+import ai.zevaro.core.domain.requirement.RequirementRepository;
+import ai.zevaro.core.domain.specification.SpecificationRepository;
 import ai.zevaro.core.domain.stakeholder.StakeholderMapper;
 import ai.zevaro.core.domain.team.TeamMapper;
+import ai.zevaro.core.domain.ticket.TicketRepository;
 import ai.zevaro.core.domain.user.UserMapper;
+import ai.zevaro.core.domain.workstream.Workstream;
+import ai.zevaro.core.domain.workstream.WorkstreamRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,6 +46,12 @@ public class DecisionMapper {
     private final HypothesisMapper hypothesisMapper;
     private final DecisionQueueMapper queueMapper;
     private final StakeholderMapper stakeholderMapper;
+    private final HypothesisRepository hypothesisRepository;
+    private final SpecificationRepository specificationRepository;
+    private final RequirementRepository requirementRepository;
+    private final TicketRepository ticketRepository;
+    private final WorkstreamRepository workstreamRepository;
+    private final ProgramRepository programRepository;
 
     public DecisionResponse toResponse(Decision decision, int commentCount) {
         return toResponse(decision, commentCount, 0, null, null);
@@ -52,6 +65,14 @@ public class DecisionMapper {
                                         List<VoteResponse> votes, List<CommentResponse> comments) {
         if (decision == null) {
             return null;
+        }
+
+        String parentTitle = resolveParentTitle(decision.getParentType(), decision.getParentId(), decision.getTenantId());
+        String workstreamName = null;
+        if (decision.getWorkstreamId() != null) {
+            workstreamName = workstreamRepository.findByIdAndTenantId(decision.getWorkstreamId(), decision.getTenantId())
+                    .map(Workstream::getName)
+                    .orElse(null);
         }
 
         return new DecisionResponse(
@@ -71,6 +92,11 @@ public class DecisionMapper {
                 decision.getProgram() != null ? programMapper.toSummary(decision.getProgram()) : null,
                 decision.getQueue() != null ? queueMapper.toSummary(decision.getQueue()) : null,
                 decision.getStakeholder() != null ? stakeholderMapper.toSummary(decision.getStakeholder()) : null,
+                decision.getParentType(),
+                decision.getParentId(),
+                parentTitle,
+                decision.getWorkstreamId(),
+                workstreamName,
                 decision.getSlaHours(),
                 decision.getDueAt(),
                 decision.isOverdue(),
@@ -189,6 +215,32 @@ public class DecisionMapper {
                 vote.getComment(),
                 vote.getCreatedAt()
         );
+    }
+
+    private String resolveParentTitle(DecisionParentType parentType, UUID parentId, UUID tenantId) {
+        if (parentType == null || parentId == null) {
+            return null;
+        }
+        return switch (parentType) {
+            case HYPOTHESIS -> hypothesisRepository.findByIdAndTenantId(parentId, tenantId)
+                    .map(h -> h.getTitle())
+                    .orElse(null);
+            case SPECIFICATION -> specificationRepository.findByIdAndTenantId(parentId, tenantId)
+                    .map(s -> s.getName())
+                    .orElse(null);
+            case REQUIREMENT -> requirementRepository.findByIdAndTenantId(parentId, tenantId)
+                    .map(r -> r.getTitle())
+                    .orElse(null);
+            case TICKET -> ticketRepository.findByIdAndTenantId(parentId, tenantId)
+                    .map(t -> t.getTitle())
+                    .orElse(null);
+            case WORKSTREAM -> workstreamRepository.findByIdAndTenantId(parentId, tenantId)
+                    .map(w -> w.getName())
+                    .orElse(null);
+            case PROGRAM -> programRepository.findByIdAndTenantId(parentId, tenantId)
+                    .map(p -> p.getName())
+                    .orElse(null);
+        };
     }
 
     private List<DecisionOption> parseOptions(String json) {

@@ -32,13 +32,25 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/outcomes")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 public class OutcomeController {
 
     private final OutcomeService outcomeService;
 
-    @GetMapping
+    // --- Nested endpoint (under Workstreams) ---
+
+    @GetMapping("/workstreams/{wsId}/outcomes")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:read')")
+    public ResponseEntity<List<OutcomeResponse>> getOutcomesForWorkstream(
+            @PathVariable UUID wsId,
+            @CurrentUser UserPrincipal user) {
+        return ResponseEntity.ok(outcomeService.getOutcomesForWorkstream(wsId, user.getTenantId()));
+    }
+
+    // --- Flat endpoints ---
+
+    @GetMapping("/outcomes")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:read')")
     public ResponseEntity<List<OutcomeResponse>> getOutcomes(
             @RequestParam(required = false) OutcomeStatus status,
@@ -50,7 +62,7 @@ public class OutcomeController {
                 user.getTenantId(), status, teamId, priority, projectId));
     }
 
-    @GetMapping("/paged")
+    @GetMapping("/outcomes/paged")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:read')")
     public ResponseEntity<Page<OutcomeResponse>> getOutcomesPaged(
             @RequestParam(required = false) OutcomeStatus status,
@@ -70,7 +82,7 @@ public class OutcomeController {
                 user.getTenantId(), status, teamId, priority, projectId, pageable));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/outcomes/{id}")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:read')")
     public ResponseEntity<OutcomeResponse> getOutcome(
             @PathVariable UUID id,
@@ -78,13 +90,13 @@ public class OutcomeController {
         return ResponseEntity.ok(outcomeService.getOutcomeById(id, user.getTenantId()));
     }
 
-    @GetMapping("/my-outcomes")
+    @GetMapping("/outcomes/my-outcomes")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<OutcomeResponse>> getMyOutcomes(@CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(outcomeService.getOutcomesForOwner(user.getUserId(), user.getTenantId()));
     }
 
-    @GetMapping("/team/{teamId}")
+    @GetMapping("/outcomes/team/{teamId}")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:read')")
     public ResponseEntity<List<OutcomeResponse>> getTeamOutcomes(
             @PathVariable UUID teamId,
@@ -92,13 +104,13 @@ public class OutcomeController {
         return ResponseEntity.ok(outcomeService.getOutcomesForTeam(teamId, user.getTenantId()));
     }
 
-    @GetMapping("/overdue")
+    @GetMapping("/outcomes/overdue")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:read')")
     public ResponseEntity<List<OutcomeResponse>> getOverdueOutcomes(@CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(outcomeService.getOverdueOutcomes(user.getTenantId()));
     }
 
-    @PostMapping
+    @PostMapping("/outcomes")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:create')")
     public ResponseEntity<OutcomeResponse> createOutcome(
             @Valid @RequestBody CreateOutcomeRequest request,
@@ -108,7 +120,7 @@ public class OutcomeController {
         return ResponseEntity.status(HttpStatus.CREATED).body(outcome);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/outcomes/{id}")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:update')")
     public ResponseEntity<OutcomeResponse> updateOutcome(
             @PathVariable UUID id,
@@ -117,7 +129,7 @@ public class OutcomeController {
         return ResponseEntity.ok(outcomeService.updateOutcome(id, user.getTenantId(), request));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/outcomes/{id}")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:delete')")
     public ResponseEntity<Void> deleteOutcome(
             @PathVariable UUID id,
@@ -126,7 +138,7 @@ public class OutcomeController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/start")
+    @PostMapping("/outcomes/{id}/start")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:update')")
     public ResponseEntity<OutcomeResponse> startOutcome(
             @PathVariable UUID id,
@@ -134,7 +146,7 @@ public class OutcomeController {
         return ResponseEntity.ok(outcomeService.startOutcome(id, user.getTenantId()));
     }
 
-    @PostMapping("/{id}/validate")
+    @PostMapping("/outcomes/{id}/validate")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:validate')")
     public ResponseEntity<OutcomeResponse> validateOutcome(
             @PathVariable UUID id,
@@ -144,7 +156,7 @@ public class OutcomeController {
                 id, user.getTenantId(), request, user.getUserId()));
     }
 
-    @PostMapping("/{id}/invalidate")
+    @PostMapping("/outcomes/{id}/invalidate")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:validate')")
     public ResponseEntity<OutcomeResponse> invalidateOutcome(
             @PathVariable UUID id,
@@ -154,7 +166,7 @@ public class OutcomeController {
                 id, user.getTenantId(), request, user.getUserId()));
     }
 
-    @PostMapping("/{id}/abandon")
+    @PostMapping("/outcomes/{id}/abandon")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:delete')")
     public ResponseEntity<OutcomeResponse> abandonOutcome(
             @PathVariable UUID id,
@@ -163,7 +175,7 @@ public class OutcomeController {
         return ResponseEntity.ok(outcomeService.abandonOutcome(id, user.getTenantId(), reason));
     }
 
-    @PatchMapping("/{id}/metrics")
+    @PatchMapping("/outcomes/{id}/metrics")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:update')")
     public ResponseEntity<OutcomeResponse> updateMetrics(
             @PathVariable UUID id,
@@ -172,7 +184,7 @@ public class OutcomeController {
         return ResponseEntity.ok(outcomeService.updateMetrics(id, user.getTenantId(), currentMetrics));
     }
 
-    @GetMapping("/stats")
+    @GetMapping("/outcomes/stats")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:read')")
     public ResponseEntity<Map<OutcomeStatus, Long>> getStatusCounts(@CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(outcomeService.getStatusCounts(user.getTenantId()));

@@ -78,6 +78,15 @@ public interface DecisionRepository extends JpaRepository<Decision, UUID> {
 
     List<Decision> findByHypothesisId(UUID hypothesisId);
 
+    // Polymorphic parent queries
+    List<Decision> findByTenantIdAndParentTypeAndParentId(UUID tenantId, DecisionParentType parentType, UUID parentId);
+
+    List<Decision> findByTenantIdAndWorkstreamId(UUID tenantId, UUID workstreamId);
+
+    Page<Decision> findByTenantIdAndWorkstreamId(UUID tenantId, UUID workstreamId, Pageable pageable);
+
+    long countByTenantIdAndParentTypeAndParentId(UUID tenantId, DecisionParentType parentType, UUID parentId);
+
     List<Decision> findByTeamId(UUID teamId);
 
     @Query("SELECT d FROM Decision d WHERE d.tenantId = :tenantId AND d.status IN :statuses ORDER BY d.priority, d.createdAt")

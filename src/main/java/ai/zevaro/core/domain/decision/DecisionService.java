@@ -30,6 +30,8 @@ import ai.zevaro.core.domain.team.Team;
 import ai.zevaro.core.domain.team.TeamRepository;
 import ai.zevaro.core.domain.user.User;
 import ai.zevaro.core.domain.user.UserRepository;
+import ai.zevaro.core.domain.workstream.Workstream;
+import ai.zevaro.core.domain.workstream.WorkstreamRepository;
 import ai.zevaro.core.event.EventPublisher;
 import ai.zevaro.core.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -61,6 +63,7 @@ public class DecisionService {
     private final DecisionQueueRepository queueRepository;
     private final StakeholderRepository stakeholderRepository;
     private final StakeholderService stakeholderService;
+    private final WorkstreamRepository workstreamRepository;
     private final DecisionMapper decisionMapper;
     private final EventPublisher eventPublisher;
 
@@ -238,6 +241,22 @@ public class DecisionService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<DecisionResponse> listByParent(DecisionParentType parentType, UUID parentId, UUID tenantId) {
+        return decisionRepository.findByTenantIdAndParentTypeAndParentId(tenantId, parentType, parentId).stream()
+                .map(this::toResponseWithCount)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<DecisionResponse> listByWorkstream(UUID workstreamId, UUID tenantId) {
+        workstreamRepository.findByIdAndTenantId(workstreamId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Workstream", "id", workstreamId));
+        return decisionRepository.findByTenantIdAndWorkstreamId(tenantId, workstreamId).stream()
+                .map(this::toResponseWithCount)
+                .toList();
+    }
+
     @Transactional
     public DecisionResponse createDecision(UUID tenantId, CreateDecisionRequest request, UUID createdById) {
         Decision decision = decisionMapper.toEntity(request, tenantId, createdById);
@@ -292,6 +311,22 @@ public class DecisionService {
             Stakeholder stakeholder = stakeholderRepository.findByIdAndTenantId(request.stakeholderId(), tenantId)
                     .orElseThrow(() -> new ResourceNotFoundException("Stakeholder", "id", request.stakeholderId()));
             decision.setStakeholder(stakeholder);
+        }
+
+        // Polymorphic parent support
+        if (request.parentType() != null && request.parentId() != null) {
+            decision.setParentType(request.parentType());
+            decision.setParentId(request.parentId());
+        } else if (request.hypothesisId() != null) {
+            // Auto-populate from existing FK for backward compat
+            decision.setParentType(DecisionParentType.HYPOTHESIS);
+            decision.setParentId(request.hypothesisId());
+        }
+
+        if (request.workstreamId() != null) {
+            Workstream workstream = workstreamRepository.findByIdAndTenantId(request.workstreamId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Workstream", "id", request.workstreamId()));
+            decision.setWorkstreamId(workstream.getId());
         }
 
         decision = decisionRepository.save(decision);

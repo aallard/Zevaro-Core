@@ -44,7 +44,9 @@ import java.util.UUID;
         @Index(name = "idx_decision_queue", columnList = "queue_id"),
         @Index(name = "idx_decision_due", columnList = "due_at"),
         @Index(name = "idx_decision_stakeholder", columnList = "stakeholder_id"),
-        @Index(name = "idx_decision_project", columnList = "project_id")
+        @Index(name = "idx_decision_project", columnList = "project_id"),
+        @Index(name = "idx_decisions_parent", columnList = "tenant_id, parent_type, parent_id"),
+        @Index(name = "idx_decisions_tenant_ws", columnList = "tenant_id, workstream_id")
 })
 @EntityListeners(AuditingEntityListener.class)
 @Getter
@@ -102,6 +104,16 @@ public class Decision {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hypothesis_id")
     private Hypothesis hypothesis;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "parent_type")
+    private DecisionParentType parentType;
+
+    @Column(name = "parent_id")
+    private UUID parentId;
+
+    @Column(name = "workstream_id")
+    private UUID workstreamId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_id")

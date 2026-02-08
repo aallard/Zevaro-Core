@@ -1,5 +1,6 @@
 package ai.zevaro.core.domain.decision.dto;
 
+import ai.zevaro.core.domain.decision.DecisionParentType;
 import ai.zevaro.core.domain.decision.DecisionPriority;
 import ai.zevaro.core.domain.decision.DecisionStatus;
 import ai.zevaro.core.domain.decision.DecisionType;
@@ -33,6 +34,11 @@ public record DecisionResponse(
         ProgramSummary program,
         QueueSummary queue,
         StakeholderSummary stakeholder,
+        DecisionParentType parentType,
+        UUID parentId,
+        String parentTitle,
+        UUID workstreamId,
+        String workstreamName,
         Integer slaHours,
         Instant dueAt,
         boolean overdue,

@@ -28,6 +28,7 @@ public record CreateOutcomeRequest(
         UUID teamId,
         UUID ownerId,
         UUID projectId,
+        UUID workstreamId,
 
         @Future(message = "Target date must be in the future")
         LocalDate targetDate,

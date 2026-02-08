@@ -12,6 +12,9 @@ import ai.zevaro.core.domain.team.Team;
 import ai.zevaro.core.domain.team.TeamRepository;
 import ai.zevaro.core.domain.user.User;
 import ai.zevaro.core.domain.user.UserRepository;
+import ai.zevaro.core.domain.workstream.Workstream;
+import ai.zevaro.core.domain.workstream.WorkstreamMode;
+import ai.zevaro.core.domain.workstream.WorkstreamRepository;
 import ai.zevaro.core.event.EventPublisher;
 import ai.zevaro.core.exception.ResourceNotFoundException;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -38,6 +41,7 @@ public class OutcomeService {
     private final HypothesisRepository hypothesisRepository;
     private final TeamRepository teamRepository;
     private final ProgramRepository programRepository;
+    private final WorkstreamRepository workstreamRepository;
     private final UserRepository userRepository;
     private final OutcomeMapper outcomeMapper;
     private final ObjectMapper objectMapper;
@@ -112,6 +116,15 @@ public class OutcomeService {
     }
 
     @Transactional(readOnly = true)
+    public List<OutcomeResponse> getOutcomesForWorkstream(UUID workstreamId, UUID tenantId) {
+        workstreamRepository.findByIdAndTenantId(workstreamId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Workstream", "id", workstreamId));
+        return outcomeRepository.findByTenantIdAndWorkstreamIdOrderByCreatedAtDesc(tenantId, workstreamId).stream()
+                .map(this::toResponseWithCount)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<OutcomeResponse> getOutcomesForOwner(UUID ownerId, UUID tenantId) {
         return outcomeRepository.findByTenantIdAndOwnerId(tenantId, ownerId).stream()
                 .map(this::toResponseWithCount)
@@ -122,7 +135,20 @@ public class OutcomeService {
     public OutcomeResponse createOutcome(UUID tenantId, CreateOutcomeRequest request, UUID createdById) {
         Outcome outcome = outcomeMapper.toEntity(request, tenantId, createdById);
 
-        if (request.projectId() != null) {
+        if (request.workstreamId() != null) {
+            Workstream workstream = workstreamRepository.findByIdAndTenantId(request.workstreamId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Workstream", "id", request.workstreamId()));
+            if (workstream.getMode() != WorkstreamMode.DISCOVERY) {
+                throw new IllegalArgumentException("Outcomes can only be created in DISCOVERY mode Workstreams");
+            }
+            outcome.setWorkstreamId(workstream.getId());
+            // Denormalize programId from workstream
+            Program program = programRepository.findByIdAndTenantId(workstream.getProgramId(), tenantId)
+                    .orElse(null);
+            if (program != null) {
+                outcome.setProgram(program);
+            }
+        } else if (request.projectId() != null) {
             Program program = programRepository.findByIdAndTenantId(request.projectId(), tenantId)
                     .orElseThrow(() -> new ResourceNotFoundException("Program", "id", request.projectId()));
             outcome.setProgram(program);
@@ -313,6 +339,12 @@ public class OutcomeService {
 
     private OutcomeResponse toResponseWithCount(Outcome outcome) {
         int hypothesisCount = (int) hypothesisRepository.countByOutcomeId(outcome.getId());
-        return outcomeMapper.toResponse(outcome, hypothesisCount);
+        String workstreamName = null;
+        if (outcome.getWorkstreamId() != null) {
+            workstreamName = workstreamRepository.findByIdAndTenantId(outcome.getWorkstreamId(), outcome.getTenantId())
+                    .map(Workstream::getName)
+                    .orElse(null);
+        }
+        return outcomeMapper.toResponse(outcome, hypothesisCount, workstreamName);
     }
 }

@@ -38,13 +38,52 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/decisions")
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 public class DecisionController {
 
     private final DecisionService decisionService;
 
-    @GetMapping
+    // --- Nested endpoints (polymorphic parent) ---
+
+    @GetMapping("/workstreams/{wsId}/decisions")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
+    public ResponseEntity<List<DecisionResponse>> getDecisionsForWorkstream(
+            @PathVariable UUID wsId,
+            @CurrentUser UserPrincipal user) {
+        return ResponseEntity.ok(decisionService.listByWorkstream(wsId, user.getTenantId()));
+    }
+
+    @GetMapping("/specifications/{specId}/decisions")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
+    public ResponseEntity<List<DecisionResponse>> getDecisionsForSpecification(
+            @PathVariable UUID specId,
+            @CurrentUser UserPrincipal user) {
+        return ResponseEntity.ok(decisionService.listByParent(
+                DecisionParentType.SPECIFICATION, specId, user.getTenantId()));
+    }
+
+    @GetMapping("/requirements/{reqId}/decisions")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
+    public ResponseEntity<List<DecisionResponse>> getDecisionsForRequirement(
+            @PathVariable UUID reqId,
+            @CurrentUser UserPrincipal user) {
+        return ResponseEntity.ok(decisionService.listByParent(
+                DecisionParentType.REQUIREMENT, reqId, user.getTenantId()));
+    }
+
+    @GetMapping("/tickets/{ticketId}/decisions")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
+    public ResponseEntity<List<DecisionResponse>> getDecisionsForTicket(
+            @PathVariable UUID ticketId,
+            @CurrentUser UserPrincipal user) {
+        return ResponseEntity.ok(decisionService.listByParent(
+                DecisionParentType.TICKET, ticketId, user.getTenantId()));
+    }
+
+    // --- Flat endpoints ---
+
+    @GetMapping("/decisions")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
     public ResponseEntity<List<DecisionResponse>> getDecisions(
             @RequestParam(required = false) DecisionStatus status,
@@ -57,7 +96,7 @@ public class DecisionController {
                 user.getTenantId(), status, priority, type, teamId, projectId));
     }
 
-    @GetMapping("/paged")
+    @GetMapping("/decisions/paged")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
     public ResponseEntity<Page<DecisionResponse>> getDecisionsPaged(
             @RequestParam(required = false) DecisionStatus status,
@@ -78,7 +117,7 @@ public class DecisionController {
                 user.getTenantId(), status, priority, type, teamId, projectId, pageable));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/decisions/{id}")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
     public ResponseEntity<DecisionResponse> getDecision(
             @PathVariable UUID id,
@@ -88,19 +127,19 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.getDecisionById(id, user.getTenantId(), includeVotes, includeComments));
     }
 
-    @GetMapping("/queue")
+    @GetMapping("/decisions/queue")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
     public ResponseEntity<DecisionQueueResponse> getDecisionQueue(@CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(decisionService.getDecisionQueue(user.getTenantId()));
     }
 
-    @GetMapping("/my-pending")
+    @GetMapping("/decisions/my-pending")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<DecisionResponse>> getMyPendingDecisions(@CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(decisionService.getMyPendingDecisions(user.getUserId()));
     }
 
-    @GetMapping("/pending")
+    @GetMapping("/decisions/pending")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
     public ResponseEntity<List<DecisionResponse>> getPendingDecisions(
             @RequestParam(required = false) UUID teamId,
@@ -108,19 +147,19 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.getPendingDecisions(user.getTenantId(), teamId));
     }
 
-    @GetMapping("/blocking")
+    @GetMapping("/decisions/blocking")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
     public ResponseEntity<List<DecisionResponse>> getBlockingDecisions(@CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(decisionService.getBlockingDecisions(user.getTenantId()));
     }
 
-    @GetMapping("/overdue")
+    @GetMapping("/decisions/overdue")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
     public ResponseEntity<List<DecisionResponse>> getOverdueDecisions(@CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(decisionService.getOverdueDecisions(user.getTenantId()));
     }
 
-    @GetMapping("/outcome/{outcomeId}")
+    @GetMapping("/decisions/outcome/{outcomeId}")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
     public ResponseEntity<List<DecisionResponse>> getDecisionsForOutcome(
             @PathVariable UUID outcomeId,
@@ -128,7 +167,7 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.getDecisionsForOutcome(outcomeId, user.getTenantId()));
     }
 
-    @GetMapping("/hypothesis/{hypothesisId}")
+    @GetMapping("/decisions/hypothesis/{hypothesisId}")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
     public ResponseEntity<List<DecisionResponse>> getDecisionsForHypothesis(
             @PathVariable UUID hypothesisId,
@@ -136,7 +175,7 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.getDecisionsForHypothesis(hypothesisId, user.getTenantId()));
     }
 
-    @PostMapping
+    @PostMapping("/decisions")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:create')")
     public ResponseEntity<DecisionResponse> createDecision(
             @Valid @RequestBody CreateDecisionRequest request,
@@ -146,7 +185,7 @@ public class DecisionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(decision);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/decisions/{id}")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:update')")
     public ResponseEntity<DecisionResponse> updateDecision(
             @PathVariable UUID id,
@@ -155,7 +194,7 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.updateDecision(id, user.getTenantId(), request));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/decisions/{id}")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:delete')")
     public ResponseEntity<Void> deleteDecision(
             @PathVariable UUID id,
@@ -164,7 +203,7 @@ public class DecisionController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/start-discussion")
+    @PostMapping("/decisions/{id}/start-discussion")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:update')")
     public ResponseEntity<DecisionResponse> startDiscussion(
             @PathVariable UUID id,
@@ -172,7 +211,7 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.startDiscussion(id, user.getTenantId()));
     }
 
-    @PostMapping("/{id}/resolve")
+    @PostMapping("/decisions/{id}/resolve")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:resolve')")
     public ResponseEntity<DecisionResponse> resolve(
             @PathVariable UUID id,
@@ -181,7 +220,7 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.resolve(id, user.getTenantId(), request, user.getUserId()));
     }
 
-    @PostMapping("/{id}/implement")
+    @PostMapping("/decisions/{id}/implement")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:update')")
     public ResponseEntity<DecisionResponse> implement(
             @PathVariable UUID id,
@@ -189,7 +228,7 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.implement(id, user.getTenantId()));
     }
 
-    @PostMapping("/{id}/defer")
+    @PostMapping("/decisions/{id}/defer")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:update')")
     public ResponseEntity<DecisionResponse> defer(
             @PathVariable UUID id,
@@ -198,7 +237,7 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.defer(id, user.getTenantId(), reason));
     }
 
-    @PostMapping("/{id}/cancel")
+    @PostMapping("/decisions/{id}/cancel")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:delete')")
     public ResponseEntity<DecisionResponse> cancel(
             @PathVariable UUID id,
@@ -207,7 +246,7 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.cancel(id, user.getTenantId(), reason));
     }
 
-    @PostMapping("/{id}/reopen")
+    @PostMapping("/decisions/{id}/reopen")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:update')")
     public ResponseEntity<DecisionResponse> reopen(
             @PathVariable UUID id,
@@ -215,7 +254,7 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.reopen(id, user.getTenantId()));
     }
 
-    @PostMapping("/{id}/escalate")
+    @PostMapping("/decisions/{id}/escalate")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:escalate')")
     public ResponseEntity<DecisionResponse> escalate(
             @PathVariable UUID id,
@@ -224,7 +263,7 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.escalate(id, user.getTenantId(), request, user.getUserId()));
     }
 
-    @PostMapping("/{id}/assign")
+    @PostMapping("/decisions/{id}/assign")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:assign')")
     public ResponseEntity<DecisionResponse> assign(
             @PathVariable UUID id,
@@ -233,7 +272,7 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.assign(id, user.getTenantId(), assigneeId));
     }
 
-    @PostMapping("/{id}/reassign")
+    @PostMapping("/decisions/{id}/reassign")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:assign')")
     public ResponseEntity<DecisionResponse> reassign(
             @PathVariable UUID id,
@@ -243,7 +282,7 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.reassign(id, user.getTenantId(), newAssigneeId, reason));
     }
 
-    @GetMapping("/{id}/comments")
+    @GetMapping("/decisions/{id}/comments")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
     public ResponseEntity<List<CommentResponse>> getComments(
             @PathVariable UUID id,
@@ -251,7 +290,7 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.getComments(id, user.getTenantId()));
     }
 
-    @PostMapping("/{id}/comments")
+    @PostMapping("/decisions/{id}/comments")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:comment')")
     public ResponseEntity<CommentResponse> addComment(
             @PathVariable UUID id,
@@ -261,7 +300,7 @@ public class DecisionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(comment);
     }
 
-    @PutMapping("/{id}/comments/{commentId}")
+    @PutMapping("/decisions/{id}/comments/{commentId}")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:comment')")
     public ResponseEntity<CommentResponse> updateComment(
             @PathVariable UUID id,
@@ -271,7 +310,7 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.updateComment(commentId, user.getTenantId(), request, user.getUserId()));
     }
 
-    @DeleteMapping("/{id}/comments/{commentId}")
+    @DeleteMapping("/decisions/{id}/comments/{commentId}")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:comment')")
     public ResponseEntity<Void> deleteComment(
             @PathVariable UUID id,
@@ -281,13 +320,13 @@ public class DecisionController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/stats")
+    @GetMapping("/decisions/stats")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
     public ResponseEntity<Map<DecisionStatus, Long>> getStatusCounts(@CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(decisionService.getStatusCounts(user.getTenantId()));
     }
 
-    @GetMapping("/metrics/avg-time")
+    @GetMapping("/decisions/metrics/avg-time")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('analytics:read')")
     public ResponseEntity<Double> getAverageDecisionTime(
             @RequestParam(defaultValue = "30") int days,
@@ -297,7 +336,7 @@ public class DecisionController {
 
     // Vote endpoints
 
-    @GetMapping("/{id}/votes")
+    @GetMapping("/decisions/{id}/votes")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
     public ResponseEntity<List<VoteResponse>> getVotes(
             @PathVariable UUID id,
@@ -305,7 +344,7 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.getVotes(id, user.getTenantId()));
     }
 
-    @GetMapping("/{id}/votes/summary")
+    @GetMapping("/decisions/{id}/votes/summary")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
     public ResponseEntity<VoteSummary> getVoteSummary(
             @PathVariable UUID id,
@@ -313,7 +352,7 @@ public class DecisionController {
         return ResponseEntity.ok(decisionService.getVoteSummary(id, user.getTenantId()));
     }
 
-    @PostMapping("/{id}/votes")
+    @PostMapping("/decisions/{id}/votes")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:vote')")
     public ResponseEntity<VoteResponse> castVote(
             @PathVariable UUID id,
@@ -323,7 +362,7 @@ public class DecisionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(vote);
     }
 
-    @DeleteMapping("/{id}/votes")
+    @DeleteMapping("/decisions/{id}/votes")
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:vote')")
     public ResponseEntity<Void> removeVote(
             @PathVariable UUID id,

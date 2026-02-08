@@ -59,6 +59,13 @@ public interface OutcomeRepository extends JpaRepository<Outcome, UUID> {
     @Query("SELECT o.status, COUNT(o) FROM Outcome o WHERE o.tenantId = :tenantId GROUP BY o.status")
     List<Object[]> countByStatusForTenant(@Param("tenantId") UUID tenantId);
 
+    // Workstream-scoped queries
+    List<Outcome> findByTenantIdAndWorkstreamIdOrderByCreatedAtDesc(UUID tenantId, UUID workstreamId);
+
+    Page<Outcome> findByTenantIdAndWorkstreamId(UUID tenantId, UUID workstreamId, Pageable pageable);
+
+    long countByTenantIdAndWorkstreamId(UUID tenantId, UUID workstreamId);
+
     // Project-scoped queries
     Page<Outcome> findByTenantIdAndProgramId(UUID tenantId, UUID projectId, Pageable pageable);
 

@@ -28,7 +28,7 @@ public class OutcomeMapper {
     private final ProgramMapper programMapper;
     private final UserMapper userMapper;
 
-    public OutcomeResponse toResponse(Outcome outcome, int hypothesisCount) {
+    public OutcomeResponse toResponse(Outcome outcome, int hypothesisCount, String workstreamName) {
         if (outcome == null) {
             return null;
         }
@@ -45,6 +45,8 @@ public class OutcomeMapper {
                 outcome.getTeam() != null ? teamMapper.toSummary(outcome.getTeam()) : null,
                 outcome.getOwner() != null ? userMapper.toSummary(outcome.getOwner()) : null,
                 outcome.getProgram() != null ? programMapper.toSummary(outcome.getProgram()) : null,
+                outcome.getWorkstreamId(),
+                workstreamName,
                 outcome.getTargetDate(),
                 outcome.getStartedAt(),
                 outcome.getValidatedAt(),

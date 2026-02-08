@@ -24,6 +24,8 @@ public record OutcomeResponse(
         TeamSummary team,
         UserSummary owner,
         ProgramSummary program,
+        UUID workstreamId,
+        String workstreamName,
         LocalDate targetDate,
         Instant startedAt,
         Instant validatedAt,

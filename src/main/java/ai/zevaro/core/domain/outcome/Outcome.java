@@ -35,7 +35,8 @@ import java.util.UUID;
 @Table(name = "outcomes", indexes = {
         @Index(name = "idx_outcome_tenant_status", columnList = "tenant_id, status"),
         @Index(name = "idx_outcome_tenant_team", columnList = "tenant_id, team_id"),
-        @Index(name = "idx_outcome_project", columnList = "project_id")
+        @Index(name = "idx_outcome_project", columnList = "project_id"),
+        @Index(name = "idx_outcomes_tenant_ws", columnList = "tenant_id, workstream_id")
 })
 @EntityListeners(AuditingEntityListener.class)
 @Getter
@@ -53,6 +54,9 @@ public class Outcome {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
     private Program program;
+
+    @Column(name = "workstream_id")
+    private UUID workstreamId;
 
     @Column(nullable = false, length = 500)
     private String title;
