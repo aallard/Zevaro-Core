@@ -3,8 +3,11 @@ package ai.zevaro.core.domain.specification;
 import ai.zevaro.core.domain.audit.AuditAction;
 import ai.zevaro.core.domain.audit.AuditLogBuilder;
 import ai.zevaro.core.domain.audit.AuditService;
+import ai.zevaro.core.domain.document.Document;
+import ai.zevaro.core.domain.document.DocumentService;
 import ai.zevaro.core.domain.program.Program;
 import ai.zevaro.core.domain.program.ProgramRepository;
+import ai.zevaro.core.domain.space.SpaceRepository;
 import ai.zevaro.core.domain.specification.dto.CreateSpecificationRequest;
 import ai.zevaro.core.domain.specification.dto.SpecificationResponse;
 import ai.zevaro.core.domain.specification.dto.UpdateSpecificationRequest;
@@ -15,6 +18,7 @@ import ai.zevaro.core.domain.workstream.WorkstreamMode;
 import ai.zevaro.core.domain.workstream.WorkstreamRepository;
 import ai.zevaro.core.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,6 +32,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SpecificationService {
 
     private final SpecificationRepository specificationRepository;
@@ -36,6 +41,8 @@ public class SpecificationService {
     private final UserRepository userRepository;
     private final SpecificationMapper specificationMapper;
     private final AuditService auditService;
+    private final DocumentService documentService;
+    private final SpaceRepository spaceRepository;
 
     private static final Map<SpecificationStatus, Set<SpecificationStatus>> VALID_TRANSITIONS = Map.of(
             SpecificationStatus.DRAFT, Set.of(SpecificationStatus.IN_REVIEW),
@@ -65,6 +72,22 @@ public class SpecificationService {
                 .action(AuditAction.CREATE)
                 .entity("SPECIFICATION", spec.getId(), spec.getName())
                 .description("Created specification: " + spec.getName()));
+
+        // Auto-create a SPECIFICATION Document in the Program's Space
+        try {
+            var spaceOpt = spaceRepository.findByTenantIdAndProgramId(tenantId, workstream.getProgramId());
+            if (spaceOpt.isPresent()) {
+                Document document = documentService.createForSpecification(
+                        spaceOpt.get().getId(), spec.getName(), tenantId, userId);
+                spec.setDocumentId(document.getId());
+                spec = specificationRepository.save(spec);
+            } else {
+                log.warn("No Space found for program {} — skipping document auto-creation for specification {}",
+                        workstream.getProgramId(), spec.getId());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to auto-create document for specification {}: {}", spec.getId(), e.getMessage());
+        }
 
         return buildResponse(spec);
     }

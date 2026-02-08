@@ -3,6 +3,7 @@ package ai.zevaro.core.domain.space;
 import ai.zevaro.core.domain.audit.AuditAction;
 import ai.zevaro.core.domain.audit.AuditLogBuilder;
 import ai.zevaro.core.domain.audit.AuditService;
+import ai.zevaro.core.domain.document.DocumentRepository;
 import ai.zevaro.core.domain.program.Program;
 import ai.zevaro.core.domain.program.ProgramRepository;
 import ai.zevaro.core.domain.space.dto.CreateSpaceRequest;
@@ -29,6 +30,7 @@ public class SpaceService {
     private final SpaceRepository spaceRepository;
     private final ProgramRepository programRepository;
     private final UserRepository userRepository;
+    private final DocumentRepository documentRepository;
     private final SpaceMapper spaceMapper;
     private final SlugGenerator slugGenerator;
     private final AuditService auditService;
@@ -200,7 +202,7 @@ public class SpaceService {
     private SpaceResponse toResponse(Space space) {
         String programName = resolveProgramName(space.getProgramId(), space.getTenantId());
         String ownerName = resolveOwnerName(space.getOwnerId(), space.getTenantId());
-        int documentCount = 0; // Wired in ZC-061
+        int documentCount = (int) documentRepository.countByTenantIdAndSpaceId(space.getTenantId(), space.getId());
         return spaceMapper.toResponse(space, programName, ownerName, documentCount);
     }
 
