@@ -38,4 +38,6 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
 
     @Query("SELECT COUNT(p) FROM Project p WHERE p.tenantId = :tenantId AND p.status = :status")
     long countByTenantIdAndStatus(@Param("tenantId") UUID tenantId, @Param("status") ProjectStatus status);
+
+    List<Project> findByTenantIdAndPortfolioId(UUID tenantId, UUID portfolioId);
 }

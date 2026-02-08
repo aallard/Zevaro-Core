@@ -1,18 +1,14 @@
-package ai.zevaro.core.domain.project;
+package ai.zevaro.core.domain.portfolio;
 
-import ai.zevaro.core.domain.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
@@ -26,9 +22,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "projects", indexes = {
-        @Index(name = "idx_project_tenant_status", columnList = "tenant_id, status"),
-        @Index(name = "idx_project_portfolio", columnList = "portfolio_id")
+@Table(name = "portfolios", indexes = {
+        @Index(name = "idx_portfolios_tenant", columnList = "tenant_id"),
+        @Index(name = "idx_portfolios_tenant_status", columnList = "tenant_id, status")
 },
 uniqueConstraints = {
         @UniqueConstraint(columnNames = {"tenant_id", "slug"})
@@ -37,7 +33,7 @@ uniqueConstraints = {
 @Getter
 @Setter
 @NoArgsConstructor
-public class Project {
+public class Portfolio {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -49,25 +45,21 @@ public class Project {
     @Column(nullable = false, length = 255)
     private String name;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 300)
     private String slug;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "text")
     private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ProjectStatus status = ProjectStatus.ACTIVE;
+    private PortfolioStatus status = PortfolioStatus.ACTIVE;
 
-    @Column(length = 7)
-    private String color;
+    @Column(name = "owner_id")
+    private UUID ownerId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    private User owner;
-
-    @Column(name = "icon_url")
-    private String iconUrl;
+    @Column(columnDefinition = "text")
+    private String tags;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)
@@ -79,7 +71,4 @@ public class Project {
 
     @Column(name = "created_by_id")
     private UUID createdById;
-
-    @Column(name = "portfolio_id")
-    private UUID portfolioId;
 }

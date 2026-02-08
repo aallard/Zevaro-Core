@@ -143,4 +143,8 @@ public interface DecisionRepository extends JpaRepository<Decision, UUID> {
     // For stakeholder scorecard - decisions completed this month
     @Query(value = "SELECT COUNT(*) FROM decisions WHERE tenant_id = :tenantId AND assigned_to_id = :userId AND decided_at IS NOT NULL AND DATE_TRUNC('month', decided_at) = DATE_TRUNC('month', CURRENT_DATE)", nativeQuery = true)
     long countDecisionsCompletedThisMonth(@Param("tenantId") UUID tenantId, @Param("userId") UUID userId);
+
+    // Portfolio-scoped queries
+    @Query("SELECT d FROM Decision d WHERE d.tenantId = :tenantId AND d.project.id IN :projectIds")
+    List<Decision> findByTenantIdAndProjectIdIn(@Param("tenantId") UUID tenantId, @Param("projectIds") List<UUID> projectIds);
 }
