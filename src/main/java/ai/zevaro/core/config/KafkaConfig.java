@@ -65,51 +65,51 @@ public class KafkaConfig {
     // Topic definitions
     @Bean
     public NewTopic decisionCreatedTopic() {
-        return TopicBuilder.name("zevaro.decisions.created").partitions(3).replicas(1).build();
+        return TopicBuilder.name(KafkaTopics.DECISION_CREATED).partitions(3).replicas(1).build();
     }
 
     @Bean
     public NewTopic decisionResolvedTopic() {
-        return TopicBuilder.name("zevaro.decisions.resolved").partitions(3).replicas(1).build();
+        return TopicBuilder.name(KafkaTopics.DECISION_RESOLVED).partitions(3).replicas(1).build();
     }
 
     @Bean
     public NewTopic decisionEscalatedTopic() {
-        return TopicBuilder.name("zevaro.decisions.escalated").partitions(3).replicas(1).build();
+        return TopicBuilder.name(KafkaTopics.DECISION_ESCALATED).partitions(3).replicas(1).build();
     }
 
     @Bean
     public NewTopic outcomeCreatedTopic() {
-        return TopicBuilder.name("zevaro.outcomes.created").partitions(3).replicas(1).build();
+        return TopicBuilder.name(KafkaTopics.OUTCOME_CREATED).partitions(3).replicas(1).build();
     }
 
     @Bean
     public NewTopic outcomeValidatedTopic() {
-        return TopicBuilder.name("zevaro.outcomes.validated").partitions(3).replicas(1).build();
+        return TopicBuilder.name(KafkaTopics.OUTCOME_VALIDATED).partitions(3).replicas(1).build();
     }
 
     @Bean
     public NewTopic outcomeInvalidatedTopic() {
-        return TopicBuilder.name("zevaro.outcomes.invalidated").partitions(3).replicas(1).build();
+        return TopicBuilder.name(KafkaTopics.OUTCOME_INVALIDATED).partitions(3).replicas(1).build();
     }
 
     @Bean
     public NewTopic hypothesisCreatedTopic() {
-        return TopicBuilder.name("zevaro.hypotheses.created").partitions(3).replicas(1).build();
+        return TopicBuilder.name(KafkaTopics.HYPOTHESIS_CREATED).partitions(3).replicas(1).build();
     }
 
     @Bean
     public NewTopic hypothesisStatusChangedTopic() {
-        return TopicBuilder.name("zevaro.hypotheses.status-changed").partitions(3).replicas(1).build();
+        return TopicBuilder.name(KafkaTopics.HYPOTHESIS_STATUS_CHANGED).partitions(3).replicas(1).build();
     }
 
     @Bean
     public NewTopic hypothesisConcludedTopic() {
-        return TopicBuilder.name("zevaro.hypotheses.concluded").partitions(3).replicas(1).build();
+        return TopicBuilder.name(KafkaTopics.HYPOTHESIS_CONCLUDED).partitions(3).replicas(1).build();
     }
 
     @Bean
     public NewTopic auditEventsTopic() {
-        return TopicBuilder.name("zevaro.audit.events").partitions(3).replicas(1).build();
+        return TopicBuilder.name(KafkaTopics.AUDIT_EVENTS).partitions(3).replicas(1).build();
     }
 }

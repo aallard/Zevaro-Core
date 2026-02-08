@@ -42,8 +42,8 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserResponse> getDirectReports(UUID managerId) {
-        return userRepository.findByManagerId(managerId).stream()
+    public List<UserResponse> getDirectReports(UUID managerId, UUID tenantId) {
+        return userRepository.findByManagerIdAndTenantId(managerId, tenantId).stream()
                 .map(userMapper::toResponse)
                 .toList();
     }

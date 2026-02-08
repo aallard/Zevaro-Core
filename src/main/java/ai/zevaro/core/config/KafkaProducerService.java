@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Service
 @ConditionalOnProperty(name = "spring.kafka.enabled", havingValue = "true", matchIfMissing = true)
 @Slf4j
-public class KafkaProducerService {
+public class KafkaProducerService implements KafkaProducerInterface {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 

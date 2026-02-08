@@ -1,6 +1,6 @@
 package ai.zevaro.core.event;
 
-import ai.zevaro.core.config.KafkaProducerService;
+import ai.zevaro.core.config.KafkaProducerInterface;
 import ai.zevaro.core.config.KafkaTopics;
 import ai.zevaro.core.domain.decision.Decision;
 import ai.zevaro.core.domain.decision.DecisionPriority;
@@ -35,7 +35,7 @@ import java.util.UUID;
 @Slf4j
 public class EventPublisher {
 
-    private final KafkaProducerService kafkaProducerService;
+    private final KafkaProducerInterface kafkaProducerService;
 
     private static final Map<String, String> TOPIC_MAP = Map.of(
             "decision.created", KafkaTopics.DECISION_CREATED,
@@ -45,7 +45,7 @@ public class EventPublisher {
             "outcome.validated", KafkaTopics.OUTCOME_VALIDATED,
             "outcome.invalidated", KafkaTopics.OUTCOME_INVALIDATED,
             "hypothesis.created", KafkaTopics.HYPOTHESIS_CREATED,
-            "hypothesis.status-changed", "zevaro.core.hypothesis.status-changed",
+            "hypothesis.status-changed", KafkaTopics.HYPOTHESIS_STATUS_CHANGED,
             "hypothesis.concluded", KafkaTopics.HYPOTHESIS_CONCLUDED
     );
 
@@ -138,7 +138,7 @@ public class EventPublisher {
                 actorId,
                 outcome.getId(),
                 outcome.getTitle(),
-                outcome.getValidatedBy().getId(),
+                outcome.getInvalidatedBy().getId(),
                 outcome.getValidationNotes()
         ));
     }

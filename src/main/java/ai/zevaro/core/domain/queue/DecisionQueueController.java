@@ -30,14 +30,14 @@ public class DecisionQueueController {
     private final DecisionQueueService queueService;
 
     @GetMapping
-    @PreAuthorize("hasPermission(#principal.tenantId, 'QUEUE', 'READ')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('queue:read')")
     public ResponseEntity<List<QueueResponse>> getQueues(@CurrentUser UserPrincipal principal) {
         List<QueueResponse> queues = queueService.getQueues(principal.getTenantId());
         return ResponseEntity.ok(queues);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasPermission(#principal.tenantId, 'QUEUE', 'READ')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('queue:read')")
     public ResponseEntity<QueueResponse> getQueueById(
             @PathVariable UUID id,
             @CurrentUser UserPrincipal principal) {
@@ -46,7 +46,7 @@ public class DecisionQueueController {
     }
 
     @GetMapping("/default")
-    @PreAuthorize("hasPermission(#principal.tenantId, 'QUEUE', 'READ')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('queue:read')")
     public ResponseEntity<QueueResponse> getDefaultQueue(@CurrentUser UserPrincipal principal) {
         QueueResponse queue = queueService.getDefaultQueue(principal.getTenantId());
         if (queue == null) {
@@ -56,7 +56,7 @@ public class DecisionQueueController {
     }
 
     @PostMapping
-    @PreAuthorize("hasPermission(#principal.tenantId, 'QUEUE', 'CREATE')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('queue:create')")
     public ResponseEntity<QueueResponse> createQueue(
             @Valid @RequestBody CreateQueueRequest request,
             @CurrentUser UserPrincipal principal) {
@@ -65,7 +65,7 @@ public class DecisionQueueController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasPermission(#principal.tenantId, 'QUEUE', 'UPDATE')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('queue:update')")
     public ResponseEntity<QueueResponse> updateQueue(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateQueueRequest request,
@@ -75,7 +75,7 @@ public class DecisionQueueController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasPermission(#principal.tenantId, 'QUEUE', 'DELETE')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('queue:delete')")
     public ResponseEntity<Void> deleteQueue(
             @PathVariable UUID id,
             @CurrentUser UserPrincipal principal) {
@@ -84,7 +84,7 @@ public class DecisionQueueController {
     }
 
     @PostMapping("/{id}/set-default")
-    @PreAuthorize("hasPermission(#principal.tenantId, 'QUEUE', 'UPDATE')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('queue:update')")
     public ResponseEntity<QueueResponse> setDefaultQueue(
             @PathVariable UUID id,
             @CurrentUser UserPrincipal principal) {

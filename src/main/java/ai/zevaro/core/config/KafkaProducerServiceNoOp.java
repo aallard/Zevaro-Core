@@ -15,12 +15,11 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 @ConditionalOnProperty(name = "spring.kafka.enabled", havingValue = "false")
 @Slf4j
-public class KafkaProducerServiceNoOp extends KafkaProducerService {
+public class KafkaProducerServiceNoOp implements KafkaProducerInterface {
 
     private final AtomicLong droppedCount = new AtomicLong(0);
 
     public KafkaProducerServiceNoOp() {
-        super(null);
         log.info("Kafka is DISABLED (KAFKA_ENABLED=false). Events will not be published.");
     }
 

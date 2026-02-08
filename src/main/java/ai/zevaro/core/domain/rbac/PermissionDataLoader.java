@@ -28,6 +28,12 @@ public class PermissionDataLoader implements CommandLineRunner {
         log.info("Initializing permissions...");
 
         List<Permission> permissions = List.of(
+                // Project permissions
+                new Permission("project:read", "Read Projects", "View projects", "PROJECT"),
+                new Permission("project:create", "Create Projects", "Create new projects", "PROJECT"),
+                new Permission("project:update", "Update Projects", "Modify existing projects", "PROJECT"),
+                new Permission("project:delete", "Delete Projects", "Remove projects", "PROJECT"),
+
                 // Outcome permissions
                 new Permission("outcome:read", "Read Outcomes", "View outcomes", "OUTCOME"),
                 new Permission("outcome:create", "Create Outcomes", "Create new outcomes", "OUTCOME"),
@@ -43,6 +49,13 @@ public class PermissionDataLoader implements CommandLineRunner {
                 new Permission("hypothesis:delete", "Delete Hypotheses", "Remove hypotheses", "HYPOTHESIS"),
                 new Permission("hypothesis:transition", "Transition Hypotheses", "Change hypothesis status", "HYPOTHESIS"),
                 new Permission("hypothesis:build", "Build Hypotheses", "Start building hypothesis", "HYPOTHESIS"),
+                new Permission("hypothesis:validate", "Validate Hypotheses", "Validate or conclude hypotheses", "HYPOTHESIS"),
+
+                // Experiment permissions
+                new Permission("experiment:read", "Read Experiments", "View experiments", "EXPERIMENT"),
+                new Permission("experiment:create", "Create Experiments", "Create new experiments", "EXPERIMENT"),
+                new Permission("experiment:update", "Update Experiments", "Modify existing experiments", "EXPERIMENT"),
+                new Permission("experiment:delete", "Delete Experiments", "Remove experiments", "EXPERIMENT"),
 
                 // Decision permissions
                 new Permission("decision:read", "Read Decisions", "View decisions", "DECISION"),
@@ -53,6 +66,7 @@ public class PermissionDataLoader implements CommandLineRunner {
                 new Permission("decision:escalate", "Escalate Decisions", "Escalate decisions to higher level", "DECISION"),
                 new Permission("decision:assign", "Assign Decisions", "Assign decisions to resolvers", "DECISION"),
                 new Permission("decision:comment", "Comment on Decisions", "Add comments to decisions", "DECISION"),
+                new Permission("decision:vote", "Vote on Decisions", "Cast votes on decisions", "DECISION"),
 
                 // Team permissions
                 new Permission("team:read", "Read Teams", "View teams", "TEAM"),

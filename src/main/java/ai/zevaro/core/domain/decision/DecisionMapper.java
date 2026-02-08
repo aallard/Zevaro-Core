@@ -275,7 +275,7 @@ public class DecisionMapper {
         }
     }
 
-    private String blockedItemsToJson(List<BlockedItem> items) {
+    public String blockedItemsToJson(List<BlockedItem> items) {
         if (items == null) {
             return null;
         }

@@ -34,6 +34,7 @@ public class RoleDataLoader implements CommandLineRunner {
         List<Role> roles = List.of(
                 // System Roles
                 createRole("SUPER_ADMIN", "Super Administrator", "Full system access across all tenants", RoleCategory.SYSTEM, RoleLevel.L9_OWNER),
+                createRole("TENANT_OWNER", "Tenant Owner", "Highest tenant-level role with all permissions", RoleCategory.SYSTEM, RoleLevel.L9_OWNER),
                 createRole("TENANT_ADMIN", "Tenant Administrator", "Full access within tenant", RoleCategory.SYSTEM, RoleLevel.L8_CXXX),
 
                 // Executive Roles
@@ -98,9 +99,13 @@ public class RoleDataLoader implements CommandLineRunner {
 
         // Assign permissions based on level
         for (Role role : roles) {
-            List<String> permissionCodes = permissionMapper.getPermissionsForLevel(role.getLevel(), role.getCategory());
-            Set<Permission> permissions = new HashSet<>(permissionRepository.findByCodeIn(permissionCodes));
-            role.setPermissions(permissions);
+            if ("TENANT_OWNER".equals(role.getCode()) || "SUPER_ADMIN".equals(role.getCode())) {
+                role.setPermissions(new HashSet<>(permissionRepository.findAll()));
+            } else {
+                List<String> permissionCodes = permissionMapper.getPermissionsForLevel(role.getLevel(), role.getCategory());
+                Set<Permission> permissions = new HashSet<>(permissionRepository.findByCodeIn(permissionCodes));
+                role.setPermissions(permissions);
+            }
         }
 
         roleRepository.saveAll(roles);

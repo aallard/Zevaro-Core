@@ -15,5 +15,9 @@ public final class KafkaTopics {
 
     // Hypothesis events
     public static final String HYPOTHESIS_CREATED = "zevaro.core.hypothesis.created";
+    public static final String HYPOTHESIS_STATUS_CHANGED = "zevaro.core.hypothesis.status-changed";
     public static final String HYPOTHESIS_CONCLUDED = "zevaro.core.hypothesis.concluded";
+
+    // Audit events
+    public static final String AUDIT_EVENTS = "zevaro.core.audit.events";
 }

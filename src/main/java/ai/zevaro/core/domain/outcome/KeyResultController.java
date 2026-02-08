@@ -32,7 +32,7 @@ public class KeyResultController {
     private final KeyResultService keyResultService;
 
     @GetMapping
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:read')")
     public ResponseEntity<List<KeyResultResponse>> getKeyResults(
             @PathVariable UUID outcomeId,
             @CurrentUser UserPrincipal principal) {
@@ -41,7 +41,7 @@ public class KeyResultController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:read')")
     public ResponseEntity<KeyResultResponse> getKeyResult(
             @PathVariable UUID outcomeId,
             @PathVariable UUID id,
@@ -51,7 +51,7 @@ public class KeyResultController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:update')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:update')")
     public ResponseEntity<KeyResultResponse> createKeyResult(
             @PathVariable UUID outcomeId,
             @Valid @RequestBody CreateKeyResultRequest request,
@@ -61,7 +61,7 @@ public class KeyResultController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:update')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:update')")
     public ResponseEntity<KeyResultResponse> updateKeyResult(
             @PathVariable UUID outcomeId,
             @PathVariable UUID id,
@@ -72,7 +72,7 @@ public class KeyResultController {
     }
 
     @PostMapping("/{id}/progress")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:update')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:update')")
     public ResponseEntity<KeyResultResponse> updateProgress(
             @PathVariable UUID outcomeId,
             @PathVariable UUID id,
@@ -83,7 +83,7 @@ public class KeyResultController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:update')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('outcome:update')")
     public ResponseEntity<Void> deleteKeyResult(
             @PathVariable UUID outcomeId,
             @PathVariable UUID id,

@@ -87,7 +87,7 @@ public class HypothesisController {
     }
 
     @GetMapping("/blocked")
-    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:read')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('hypothesis:read')")
     public ResponseEntity<List<HypothesisResponse>> getBlockedHypotheses(@CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(hypothesisService.getBlockedHypotheses(user.getTenantId()));
     }

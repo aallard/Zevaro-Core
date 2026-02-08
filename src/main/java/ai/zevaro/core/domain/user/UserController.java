@@ -77,8 +77,10 @@ public class UserController {
 
     @GetMapping("/{id}/direct-reports")
     @PreAuthorize("hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('user:read')")
-    public ResponseEntity<List<UserResponse>> getDirectReports(@PathVariable UUID id) {
-        List<UserResponse> reports = userService.getDirectReports(id);
+    public ResponseEntity<List<UserResponse>> getDirectReports(
+            @PathVariable UUID id,
+            @CurrentUser UserPrincipal currentUser) {
+        List<UserResponse> reports = userService.getDirectReports(id, currentUser.getTenantId());
         return ResponseEntity.ok(reports);
     }
 

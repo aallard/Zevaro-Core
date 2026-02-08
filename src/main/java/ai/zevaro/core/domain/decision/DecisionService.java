@@ -535,7 +535,32 @@ public class DecisionService {
 
     @Transactional
     public DecisionResponse reassign(UUID id, UUID tenantId, UUID newAssigneeId, String reason) {
-        return assign(id, tenantId, newAssigneeId);
+        Decision decision = decisionRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", id));
+
+        User previousAssignee = decision.getAssignedTo();
+        User newAssignee = userRepository.findByIdAndTenantId(newAssigneeId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", newAssigneeId));
+
+        decision.setAssignedTo(newAssignee);
+
+        if (reason != null && !reason.isBlank()) {
+            String previousName = previousAssignee != null
+                    ? previousAssignee.getFirstName() + " " + previousAssignee.getLastName()
+                    : "unassigned";
+            String newName = newAssignee.getFirstName() + " " + newAssignee.getLastName();
+            String reassignNote = String.format("[Reassigned from %s to %s] %s", previousName, newName, reason);
+
+            String existingContext = decision.getContext();
+            if (existingContext != null && !existingContext.isBlank()) {
+                decision.setContext(existingContext + "\n\n" + reassignNote);
+            } else {
+                decision.setContext(reassignNote);
+            }
+        }
+
+        decision = decisionRepository.save(decision);
+        return toResponseWithCount(decision);
     }
 
     @Transactional
@@ -551,7 +576,7 @@ public class DecisionService {
         }
         items.add(item);
 
-        decision.setBlockedItems(decisionMapper.optionsToJson(null));
+        decision.setBlockedItems(decisionMapper.blockedItemsToJson(items));
         decision = decisionRepository.save(decision);
         return toResponseWithCount(decision);
     }
