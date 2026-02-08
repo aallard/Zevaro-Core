@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Entity
-@Table(name = "decision_queues", schema = "core",
+@Table(name = "decision_queues",
     uniqueConstraints = @UniqueConstraint(columnNames = {"tenant_id", "name"}),
     indexes = {
         @Index(name = "idx_queue_tenant", columnList = "tenant_id")

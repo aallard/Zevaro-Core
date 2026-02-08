@@ -24,7 +24,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "key_results", schema = "core",
+@Table(name = "key_results",
     indexes = {
         @Index(name = "idx_kr_outcome", columnList = "outcome_id")
     })

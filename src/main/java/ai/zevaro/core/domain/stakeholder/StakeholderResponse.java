@@ -23,7 +23,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "stakeholder_responses", schema = "core",
+@Table(name = "stakeholder_responses",
     uniqueConstraints = @UniqueConstraint(columnNames = {"decision_id", "stakeholder_id"}),
     indexes = {
         @Index(name = "idx_response_decision", columnList = "decision_id"),

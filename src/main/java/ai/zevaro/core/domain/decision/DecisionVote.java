@@ -24,7 +24,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "decision_votes", schema = "core",
+@Table(name = "decision_votes",
     uniqueConstraints = @UniqueConstraint(columnNames = {"decision_id", "user_id"}),
     indexes = {
         @Index(name = "idx_vote_decision", columnList = "decision_id"),

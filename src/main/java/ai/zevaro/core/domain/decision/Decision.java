@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "decisions", schema = "core", indexes = {
+@Table(name = "decisions", indexes = {
         @Index(name = "idx_decision_tenant_status", columnList = "tenant_id, status"),
         @Index(name = "idx_decision_tenant_priority", columnList = "tenant_id, priority"),
         @Index(name = "idx_decision_owner", columnList = "owner_id"),

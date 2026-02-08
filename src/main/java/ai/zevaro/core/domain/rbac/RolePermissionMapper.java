@@ -10,19 +10,20 @@ import java.util.Set;
 public class RolePermissionMapper {
 
     private static final Set<String> READ_PERMISSIONS = Set.of(
-            "outcome:read", "hypothesis:read", "decision:read", "team:read",
-            "user:read", "stakeholder:read", "analytics:read"
+            "outcome:read", "hypothesis:read", "decision:read", "experiment:read",
+            "team:read", "user:read", "stakeholder:read", "analytics:read"
     );
 
     private static final Set<String> CREATE_UPDATE_PERMISSIONS = Set.of(
             "outcome:create", "outcome:update", "hypothesis:create", "hypothesis:update",
             "decision:create", "decision:update", "decision:comment",
+            "experiment:create", "experiment:update",
             "hypothesis:transition", "hypothesis:build"
     );
 
     private static final Set<String> FULL_CRUD_PERMISSIONS = Set.of(
             "outcome:delete", "outcome:validate", "outcome:assign",
-            "hypothesis:delete", "decision:delete", "decision:resolve",
+            "hypothesis:delete", "experiment:delete", "decision:delete", "decision:resolve",
             "decision:escalate", "decision:assign", "team:create", "team:update",
             "team:delete", "team:manage_members", "stakeholder:create",
             "stakeholder:update", "stakeholder:delete"

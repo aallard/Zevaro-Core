@@ -101,7 +101,7 @@ public interface DecisionRepository extends JpaRepository<Decision, UUID> {
     @Query("SELECT d FROM Decision d WHERE d.tenantId = :tenantId AND d.decidedAt BETWEEN :start AND :end")
     List<Decision> findResolvedBetween(@Param("tenantId") UUID tenantId, @Param("start") Instant start, @Param("end") Instant end);
 
-    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (decided_at - created_at))/3600) FROM core.decisions WHERE tenant_id = :tenantId AND decided_at IS NOT NULL AND decided_at > :since", nativeQuery = true)
+    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (decided_at - created_at))/3600) FROM decisions WHERE tenant_id = :tenantId AND decided_at IS NOT NULL AND decided_at > :since", nativeQuery = true)
     Double getAverageDecisionTimeHours(@Param("tenantId") UUID tenantId, @Param("since") Instant since);
 
     // Project-scoped queries
@@ -121,15 +121,15 @@ public interface DecisionRepository extends JpaRepository<Decision, UUID> {
     List<Object[]> countByStatusForProject(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
 
     // For dashboard - SLA breached decisions
-    @Query(value = "SELECT * FROM core.decisions WHERE tenant_id = :tenantId AND project_id = :projectId AND status IN ('NEEDS_INPUT', 'UNDER_DISCUSSION') AND sla_hours IS NOT NULL AND (EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - created_at))/3600) > sla_hours ORDER BY priority, created_at LIMIT 5", nativeQuery = true)
+    @Query(value = "SELECT * FROM decisions WHERE tenant_id = :tenantId AND project_id = :projectId AND status IN ('NEEDS_INPUT', 'UNDER_DISCUSSION') AND sla_hours IS NOT NULL AND (EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - created_at))/3600) > sla_hours ORDER BY priority, created_at LIMIT 5", nativeQuery = true)
     List<Decision> findSlaBreachedForProject(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
 
     // For dashboard - urgent decisions
-    @Query(value = "SELECT * FROM core.decisions WHERE tenant_id = :tenantId AND project_id = :projectId AND status IN ('NEEDS_INPUT', 'UNDER_DISCUSSION') ORDER BY priority, created_at LIMIT 5", nativeQuery = true)
+    @Query(value = "SELECT * FROM decisions WHERE tenant_id = :tenantId AND project_id = :projectId AND status IN ('NEEDS_INPUT', 'UNDER_DISCUSSION') ORDER BY priority, created_at LIMIT 5", nativeQuery = true)
     List<Decision> findUrgentDecisionsForProject(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
 
     // For dashboard - decisions resolved on a specific date
-    @Query(value = "SELECT DATE(decided_at) as date, COUNT(*) as count, AVG(EXTRACT(EPOCH FROM (decided_at - created_at))/3600) as avg_hours FROM core.decisions WHERE tenant_id = :tenantId AND project_id = :projectId AND decided_at IS NOT NULL AND decided_at > :since GROUP BY DATE(decided_at) ORDER BY DATE(decided_at) DESC", nativeQuery = true)
+    @Query(value = "SELECT DATE(decided_at) as date, COUNT(*) as count, AVG(EXTRACT(EPOCH FROM (decided_at - created_at))/3600) as avg_hours FROM decisions WHERE tenant_id = :tenantId AND project_id = :projectId AND decided_at IS NOT NULL AND decided_at > :since GROUP BY DATE(decided_at) ORDER BY DATE(decided_at) DESC", nativeQuery = true)
     List<Object[]> findDailyMetricsForProject(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId, @Param("since") java.time.Instant since);
 
     // For team workload - count pending decisions for assignee
@@ -141,6 +141,6 @@ public interface DecisionRepository extends JpaRepository<Decision, UUID> {
     List<Decision> findRecentResolvedForAssignee(@Param("tenantId") UUID tenantId, @Param("userId") UUID userId);
 
     // For stakeholder scorecard - decisions completed this month
-    @Query(value = "SELECT COUNT(*) FROM core.decisions WHERE tenant_id = :tenantId AND assigned_to_id = :userId AND decided_at IS NOT NULL AND DATE_TRUNC('month', decided_at) = DATE_TRUNC('month', CURRENT_DATE)", nativeQuery = true)
+    @Query(value = "SELECT COUNT(*) FROM decisions WHERE tenant_id = :tenantId AND assigned_to_id = :userId AND decided_at IS NOT NULL AND DATE_TRUNC('month', decided_at) = DATE_TRUNC('month', CURRENT_DATE)", nativeQuery = true)
     long countDecisionsCompletedThisMonth(@Param("tenantId") UUID tenantId, @Param("userId") UUID userId);
 }
