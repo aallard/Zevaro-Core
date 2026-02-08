@@ -75,4 +75,7 @@ public interface HypothesisRepository extends JpaRepository<Hypothesis, UUID> {
     // For team workload - count hypotheses owned by user
     @Query("SELECT COUNT(h) FROM Hypothesis h WHERE h.tenantId = :tenantId AND h.owner.id = :userId")
     long countOwnedByUser(@Param("tenantId") UUID tenantId, @Param("userId") UUID userId);
+
+    @Query("SELECT h FROM Hypothesis h WHERE h.tenantId = :tenantId AND (LOWER(h.title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(h.belief) LIKE LOWER(CONCAT('%', :query, '%')))")
+    List<Hypothesis> search(@Param("tenantId") UUID tenantId, @Param("query") String query, Pageable pageable);
 }

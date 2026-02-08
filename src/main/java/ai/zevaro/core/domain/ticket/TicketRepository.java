@@ -38,4 +38,7 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
 
     @Query("SELECT MAX(CAST(SUBSTRING(t.identifier, LENGTH(:prefix) + 1) AS int)) FROM Ticket t WHERE t.tenantId = :tenantId AND t.workstreamId = :workstreamId AND t.identifier LIKE CONCAT(:prefix, '%')")
     Optional<Integer> findMaxIdentifierNumber(@Param("tenantId") UUID tenantId, @Param("workstreamId") UUID workstreamId, @Param("prefix") String prefix);
+
+    @Query("SELECT t FROM Ticket t WHERE t.tenantId = :tenantId AND (LOWER(t.title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(t.description) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(t.identifier) LIKE LOWER(CONCAT('%', :query, '%')))")
+    List<Ticket> search(@Param("tenantId") UUID tenantId, @Param("query") String query, Pageable pageable);
 }

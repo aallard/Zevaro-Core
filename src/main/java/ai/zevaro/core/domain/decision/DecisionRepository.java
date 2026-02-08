@@ -156,4 +156,7 @@ public interface DecisionRepository extends JpaRepository<Decision, UUID>, org.s
     // Portfolio-scoped queries
     @Query("SELECT d FROM Decision d WHERE d.tenantId = :tenantId AND d.program.id IN :projectIds")
     List<Decision> findByTenantIdAndProjectIdIn(@Param("tenantId") UUID tenantId, @Param("projectIds") List<UUID> projectIds);
+
+    @Query("SELECT d FROM Decision d WHERE d.tenantId = :tenantId AND (LOWER(d.title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(d.description) LIKE LOWER(CONCAT('%', :query, '%')))")
+    List<Decision> search(@Param("tenantId") UUID tenantId, @Param("query") String query, Pageable pageable);
 }

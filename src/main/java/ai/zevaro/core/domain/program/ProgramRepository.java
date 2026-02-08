@@ -40,4 +40,7 @@ public interface ProgramRepository extends JpaRepository<Program, UUID> {
     long countByTenantIdAndStatus(@Param("tenantId") UUID tenantId, @Param("status") ProgramStatus status);
 
     List<Program> findByTenantIdAndPortfolioId(UUID tenantId, UUID portfolioId);
+
+    @Query("SELECT p FROM Program p WHERE p.tenantId = :tenantId AND (LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(p.description) LIKE LOWER(CONCAT('%', :query, '%')))")
+    List<Program> search(@Param("tenantId") UUID tenantId, @Param("query") String query, Pageable pageable);
 }

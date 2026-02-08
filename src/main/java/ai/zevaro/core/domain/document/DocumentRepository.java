@@ -3,6 +3,8 @@ package ai.zevaro.core.domain.document;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -27,4 +29,7 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
     long countByTenantIdAndSpaceId(UUID tenantId, UUID spaceId);
 
     long countByTenantIdAndParentDocumentId(UUID tenantId, UUID parentDocumentId);
+
+    @Query("SELECT d FROM Document d WHERE d.tenantId = :tenantId AND (LOWER(d.title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(d.body) LIKE LOWER(CONCAT('%', :query, '%')))")
+    List<Document> search(@Param("tenantId") UUID tenantId, @Param("query") String query, Pageable pageable);
 }

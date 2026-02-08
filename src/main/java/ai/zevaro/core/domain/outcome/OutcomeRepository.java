@@ -89,4 +89,7 @@ public interface OutcomeRepository extends JpaRepository<Outcome, UUID> {
     // For dashboard - count non-draft outcomes
     @Query("SELECT COUNT(o) FROM Outcome o WHERE o.tenantId = :tenantId AND o.program.id = :projectId AND o.status != 'DRAFT'")
     long countNonDraftForProject(@Param("tenantId") UUID tenantId, @Param("projectId") UUID projectId);
+
+    @Query("SELECT o FROM Outcome o WHERE o.tenantId = :tenantId AND (LOWER(o.title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(o.description) LIKE LOWER(CONCAT('%', :query, '%')))")
+    List<Outcome> search(@Param("tenantId") UUID tenantId, @Param("query") String query, Pageable pageable);
 }

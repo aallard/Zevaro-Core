@@ -34,4 +34,7 @@ public interface RequirementRepository extends JpaRepository<Requirement, UUID> 
 
     @Query("SELECT MAX(CAST(SUBSTRING(r.identifier, 5) AS int)) FROM Requirement r WHERE r.tenantId = :tenantId AND r.specificationId = :specificationId")
     Optional<Integer> findMaxIdentifierNumber(@Param("tenantId") UUID tenantId, @Param("specificationId") UUID specificationId);
+
+    @Query("SELECT r FROM Requirement r WHERE r.tenantId = :tenantId AND (LOWER(r.title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(r.description) LIKE LOWER(CONCAT('%', :query, '%')))")
+    List<Requirement> search(@Param("tenantId") UUID tenantId, @Param("query") String query, Pageable pageable);
 }
