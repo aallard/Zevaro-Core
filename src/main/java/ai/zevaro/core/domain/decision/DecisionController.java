@@ -101,7 +101,7 @@ public class DecisionController {
     }
 
     @GetMapping("/pending")
-    @PreAuthorize("hasRole('TENANT_OWNER') or hasAuthority('DECISION_VIEW')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
     public ResponseEntity<List<DecisionResponse>> getPendingDecisions(
             @RequestParam(required = false) UUID teamId,
             @CurrentUser UserPrincipal user) {
@@ -109,7 +109,7 @@ public class DecisionController {
     }
 
     @GetMapping("/blocking")
-    @PreAuthorize("hasRole('TENANT_OWNER') or hasAuthority('DECISION_VIEW')")
+    @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:read')")
     public ResponseEntity<List<DecisionResponse>> getBlockingDecisions(@CurrentUser UserPrincipal user) {
         return ResponseEntity.ok(decisionService.getBlockingDecisions(user.getTenantId()));
     }
