@@ -6,6 +6,7 @@ import ai.zevaro.core.domain.hypothesis.HypothesisRepository;
 import ai.zevaro.core.domain.outcome.OutcomeRepository;
 import ai.zevaro.core.domain.audit.AuditLog;
 import ai.zevaro.core.domain.audit.AuditLogRepository;
+import ai.zevaro.core.domain.space.SpaceService;
 import ai.zevaro.core.domain.decision.Decision;
 import ai.zevaro.core.domain.decision.DecisionStatus;
 import ai.zevaro.core.domain.outcome.KeyResult;
@@ -55,6 +56,7 @@ public class ProgramService {
     private final ProgramMapper programMapper;
     private final EventPublisher eventPublisher;
     private final AuditLogRepository auditLogRepository;
+    private final SpaceService spaceService;
 
     @Transactional(readOnly = true)
     public List<ProgramResponse> getPrograms(UUID tenantId, ProgramStatus status) {
@@ -114,6 +116,9 @@ public class ProgramService {
         }
 
         program = programRepository.save(program);
+
+        // Auto-create a PROGRAM-type Space for this program
+        spaceService.createForProgram(program.getId(), program.getName(), tenantId, createdById);
 
         // TODO: Implement publishProgramCreated when EventPublisher method is added
         // eventPublisher.publishProgramCreated(program, createdById);
