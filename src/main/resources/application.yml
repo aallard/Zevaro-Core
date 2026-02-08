@@ -47,6 +47,10 @@ spring:
       # Retries
       retries: 3
 
+zevaro:
+  attachments:
+    storage-path: ${ATTACHMENTS_PATH:./attachments}
+
 jwt:
   secret: ${JWT_SECRET:zevaro-development-secret-key-min-256-bits-long}
   expiration: 86400000
