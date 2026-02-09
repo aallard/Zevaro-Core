@@ -8,6 +8,7 @@ import ai.zevaro.core.domain.document.dto.UpdateDocumentRequest;
 import ai.zevaro.core.security.CurrentUser;
 import ai.zevaro.core.security.UserPrincipal;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/documents")
+@Tag(name = "Documents", description = "Document management")
 @RequiredArgsConstructor
 public class DocumentController {
 

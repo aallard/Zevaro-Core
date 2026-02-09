@@ -3,6 +3,7 @@ package ai.zevaro.core.domain.search;
 import ai.zevaro.core.domain.search.dto.SearchResult;
 import ai.zevaro.core.security.CurrentUser;
 import ai.zevaro.core.security.UserPrincipal;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +17,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/search")
+@Tag(name = "Search", description = "Cross-entity search")
 @RequiredArgsConstructor
 public class SearchController {
 

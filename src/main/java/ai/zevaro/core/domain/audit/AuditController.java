@@ -3,6 +3,7 @@ package ai.zevaro.core.domain.audit;
 import ai.zevaro.core.domain.audit.dto.AuditLogFilter;
 import ai.zevaro.core.security.CurrentUser;
 import ai.zevaro.core.security.UserPrincipal;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +22,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/audit")
+@Tag(name = "Audit", description = "Audit trail")
 @RequiredArgsConstructor
 public class AuditController {
 

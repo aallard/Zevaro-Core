@@ -54,6 +54,17 @@ zevaro:
     api-key: ${ZEVARO_EXTERNAL_API_KEY:default-dev-key-change-in-production}
     system-user-id: ${ZEVARO_EXTERNAL_SYSTEM_USER_ID:00000000-0000-0000-0000-000000000000}
 
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    tags-sorter: alpha
+    operations-sorter: method
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json
+
 jwt:
   secret: ${JWT_SECRET:zevaro-development-secret-key-min-256-bits-long}
   expiration: 86400000

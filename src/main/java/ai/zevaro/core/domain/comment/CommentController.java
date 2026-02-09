@@ -6,6 +6,7 @@ import ai.zevaro.core.domain.comment.dto.UpdateCommentRequest;
 import ai.zevaro.core.security.CurrentUser;
 import ai.zevaro.core.security.UserPrincipal;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +30,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/comments")
+@Tag(name = "Comments", description = "Comment management")
 @RequiredArgsConstructor
 public class CommentController {
 

@@ -4,6 +4,7 @@ import ai.zevaro.core.domain.ticket.dto.CreateTicketRequest;
 import ai.zevaro.core.domain.ticket.dto.ExternalTicketRequest;
 import ai.zevaro.core.domain.ticket.dto.TicketResponse;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/external/tickets")
+@Tag(name = "External Tickets", description = "External ticket ingestion")
 @RequiredArgsConstructor
 public class ExternalTicketController {
 

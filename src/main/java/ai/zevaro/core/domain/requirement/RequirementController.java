@@ -8,6 +8,7 @@ import ai.zevaro.core.domain.requirement.dto.UpdateRequirementRequest;
 import ai.zevaro.core.security.CurrentUser;
 import ai.zevaro.core.security.UserPrincipal;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -31,6 +32,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1")
+@Tag(name = "Requirements", description = "Requirement management")
 @RequiredArgsConstructor
 public class RequirementController {
 
