@@ -1,16 +1,19 @@
 package ai.zevaro.core.domain.decision;
 
 import ai.zevaro.core.config.AppConstants;
+import ai.zevaro.core.domain.comment.CommentParentType;
+import ai.zevaro.core.domain.comment.CommentRepository;
+import ai.zevaro.core.domain.comment.CommentService;
+import ai.zevaro.core.domain.comment.dto.CommentResponse;
+import ai.zevaro.core.domain.comment.dto.CreateCommentRequest;
+import ai.zevaro.core.domain.comment.dto.UpdateCommentRequest;
 import ai.zevaro.core.domain.decision.dto.BlockedItem;
 import ai.zevaro.core.domain.decision.dto.CastVoteRequest;
-import ai.zevaro.core.domain.decision.dto.CommentResponse;
-import ai.zevaro.core.domain.decision.dto.CreateCommentRequest;
 import ai.zevaro.core.domain.decision.dto.CreateDecisionRequest;
 import ai.zevaro.core.domain.decision.dto.DecisionQueueResponse;
 import ai.zevaro.core.domain.decision.dto.DecisionResponse;
 import ai.zevaro.core.domain.decision.dto.EscalateDecisionRequest;
 import ai.zevaro.core.domain.decision.dto.ResolveDecisionRequest;
-import ai.zevaro.core.domain.decision.dto.UpdateCommentRequest;
 import ai.zevaro.core.domain.decision.dto.UpdateDecisionRequest;
 import ai.zevaro.core.domain.decision.dto.VoteResponse;
 import ai.zevaro.core.domain.decision.dto.VoteSummary;
@@ -60,7 +63,8 @@ import java.util.UUID;
 public class DecisionService {
 
     private final DecisionRepository decisionRepository;
-    private final DecisionCommentRepository commentRepository;
+    private final CommentRepository commentRepository;
+    private final CommentService commentService;
     private final DecisionVoteRepository voteRepository;
     private final UserRepository userRepository;
     private final TeamRepository teamRepository;
@@ -140,7 +144,7 @@ public class DecisionService {
         Decision decision = decisionRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", id));
 
-        int commentCount = commentRepository.countByDecisionId(decision.getId());
+        int commentCount = (int) commentRepository.countByTenantIdAndParentTypeAndParentId(tenantId, CommentParentType.DECISION, decision.getId());
         List<DecisionVote> voteEntities = voteRepository.findByDecisionId(decision.getId());
         int voteCount = voteEntities.size();
 
@@ -154,9 +158,7 @@ public class DecisionService {
         }
 
         if (includeComments) {
-            comments = commentRepository.findByDecisionIdOrderByCreatedAtAsc(decision.getId()).stream()
-                    .map(decisionMapper::toCommentResponse)
-                    .toList();
+            comments = commentService.getByParent(CommentParentType.DECISION, decision.getId(), tenantId);
         }
 
         return decisionMapper.toResponse(decision, commentCount, voteCount, votes, comments);
@@ -719,60 +721,27 @@ public class DecisionService {
         decisionRepository.findByIdAndTenantId(decisionId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", decisionId));
 
-        return commentRepository.findByDecisionIdOrderByCreatedAtAsc(decisionId).stream()
-                .map(decisionMapper::toCommentResponse)
-                .toList();
+        return commentService.getByParent(CommentParentType.DECISION, decisionId, tenantId);
     }
 
     @Transactional
-    public CommentResponse addComment(UUID decisionId, UUID tenantId, CreateCommentRequest request, UUID authorId) {
-        Decision decision = decisionRepository.findByIdAndTenantId(decisionId, tenantId)
+    public CommentResponse addComment(UUID decisionId, UUID tenantId, String body, UUID parentCommentId, UUID authorId) {
+        decisionRepository.findByIdAndTenantId(decisionId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Decision", "id", decisionId));
 
-        User author = userRepository.findByIdAndTenantId(authorId, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", authorId));
-
-        DecisionComment comment = new DecisionComment();
-        comment.setDecision(decision);
-        comment.setAuthor(author);
-        comment.setContent(request.content());
-        comment.setOptionId(request.optionId());
-
-        if (request.parentId() != null) {
-            DecisionComment parent = commentRepository.findById(request.parentId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Comment", "id", request.parentId()));
-            comment.setParent(parent);
-        }
-
-        comment = commentRepository.save(comment);
-        return decisionMapper.toCommentResponse(comment);
+        CreateCommentRequest commentRequest = new CreateCommentRequest(
+                CommentParentType.DECISION, decisionId, body, parentCommentId);
+        return commentService.create(commentRequest, tenantId, authorId);
     }
 
     @Transactional
     public CommentResponse updateComment(UUID commentId, UUID tenantId, UpdateCommentRequest request, UUID userId) {
-        DecisionComment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Comment", "id", commentId));
-
-        if (!comment.getAuthor().getId().equals(userId)) {
-            throw new IllegalStateException("Only the author can edit their comment");
-        }
-
-        comment.setContent(request.content());
-        comment.setEdited(true);
-        comment = commentRepository.save(comment);
-        return decisionMapper.toCommentResponse(comment);
+        return commentService.update(commentId, request, tenantId, userId);
     }
 
     @Transactional
     public void deleteComment(UUID commentId, UUID tenantId, UUID userId) {
-        DecisionComment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Comment", "id", commentId));
-
-        if (!comment.getAuthor().getId().equals(userId)) {
-            throw new IllegalStateException("Only the author can delete their comment");
-        }
-
-        commentRepository.delete(comment);
+        commentService.delete(commentId, tenantId, userId);
     }
 
     @Transactional(readOnly = true)
@@ -880,7 +849,7 @@ public class DecisionService {
     }
 
     private DecisionResponse toResponseWithCount(Decision decision) {
-        int commentCount = commentRepository.countByDecisionId(decision.getId());
+        int commentCount = (int) commentRepository.countByTenantIdAndParentTypeAndParentId(decision.getTenantId(), CommentParentType.DECISION, decision.getId());
         int voteCount = (int) voteRepository.findByDecisionId(decision.getId()).size();
         return decisionMapper.toResponse(decision, commentCount, voteCount);
     }

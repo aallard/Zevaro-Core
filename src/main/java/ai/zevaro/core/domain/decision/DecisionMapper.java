@@ -1,7 +1,7 @@
 package ai.zevaro.core.domain.decision;
 
+import ai.zevaro.core.domain.comment.dto.CommentResponse;
 import ai.zevaro.core.domain.decision.dto.BlockedItem;
-import ai.zevaro.core.domain.decision.dto.CommentResponse;
 import ai.zevaro.core.domain.decision.dto.CreateDecisionRequest;
 import ai.zevaro.core.domain.decision.dto.DecisionOption;
 import ai.zevaro.core.domain.decision.dto.DecisionResponse;
@@ -186,22 +186,6 @@ public class DecisionMapper {
         if (request.tags() != null) {
             decision.setTags(listToJson(request.tags()));
         }
-    }
-
-    public CommentResponse toCommentResponse(DecisionComment comment) {
-        if (comment == null) {
-            return null;
-        }
-        return new CommentResponse(
-                comment.getId(),
-                comment.getAuthor() != null ? userMapper.toSummary(comment.getAuthor()) : null,
-                comment.getContent(),
-                comment.getOptionId(),
-                comment.getParent() != null ? comment.getParent().getId() : null,
-                comment.isEdited(),
-                comment.getCreatedAt(),
-                comment.getUpdatedAt()
-        );
     }
 
     public VoteResponse toVoteResponse(DecisionVote vote) {

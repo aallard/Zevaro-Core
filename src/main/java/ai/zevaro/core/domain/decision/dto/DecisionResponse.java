@@ -1,5 +1,6 @@
 package ai.zevaro.core.domain.decision.dto;
 
+import ai.zevaro.core.domain.comment.dto.CommentResponse;
 import ai.zevaro.core.domain.decision.DecisionParentType;
 import ai.zevaro.core.domain.decision.DecisionPriority;
 import ai.zevaro.core.domain.decision.DecisionStatus;

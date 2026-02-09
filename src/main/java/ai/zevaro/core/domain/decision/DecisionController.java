@@ -1,14 +1,14 @@
 package ai.zevaro.core.domain.decision;
 
+import ai.zevaro.core.domain.comment.dto.CommentResponse;
+import ai.zevaro.core.domain.comment.dto.UpdateCommentRequest;
+import ai.zevaro.core.domain.decision.dto.AddDecisionCommentRequest;
 import ai.zevaro.core.domain.decision.dto.CastVoteRequest;
-import ai.zevaro.core.domain.decision.dto.CommentResponse;
-import ai.zevaro.core.domain.decision.dto.CreateCommentRequest;
 import ai.zevaro.core.domain.decision.dto.CreateDecisionRequest;
 import ai.zevaro.core.domain.decision.dto.DecisionQueueResponse;
 import ai.zevaro.core.domain.decision.dto.DecisionResponse;
 import ai.zevaro.core.domain.decision.dto.EscalateDecisionRequest;
 import ai.zevaro.core.domain.decision.dto.ResolveDecisionRequest;
-import ai.zevaro.core.domain.decision.dto.UpdateCommentRequest;
 import ai.zevaro.core.domain.decision.dto.UpdateDecisionRequest;
 import ai.zevaro.core.domain.decision.dto.VoteResponse;
 import ai.zevaro.core.domain.decision.dto.VoteSummary;
@@ -308,9 +308,10 @@ public class DecisionController {
     @PreAuthorize("hasRole('TENANT_OWNER') or hasRole('TENANT_ADMIN') or hasRole('SUPER_ADMIN') or hasAuthority('decision:comment')")
     public ResponseEntity<CommentResponse> addComment(
             @PathVariable UUID id,
-            @Valid @RequestBody CreateCommentRequest request,
+            @Valid @RequestBody AddDecisionCommentRequest request,
             @CurrentUser UserPrincipal user) {
-        CommentResponse comment = decisionService.addComment(id, user.getTenantId(), request, user.getUserId());
+        CommentResponse comment = decisionService.addComment(
+                id, user.getTenantId(), request.body(), request.parentCommentId(), user.getUserId());
         return ResponseEntity.status(HttpStatus.CREATED).body(comment);
     }
 
